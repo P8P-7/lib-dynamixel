@@ -120,17 +120,22 @@ int Dynamixel::SendReceive(byte* buffer, int length, int responseLength)
   return retVal;
 }
 
-int Dynamixel::FormatCommand(byte command, byte address, std::vector<byte> values, byte* buffer)
+void Dynamixel::WriteHeader(byte* buffer, byte length)
 {
-  byte numberOfParameters = 0;
-
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
+  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK_SUM
   buffer[0] = 0xff;
   buffer[1] = 0xff;
   buffer[2] = _id;
 
   // bodyLength
-  buffer[3] = 0; //place holder
+  buffer[3] = length;
+}
+
+int Dynamixel::FormatCommand(byte command, byte address, std::vector<byte> values, byte* buffer)
+{
+  byte numberOfParameters = 0;
+
+  WriteHeader(buffer);
 
   //the instruction
   buffer[4] = command;
@@ -157,13 +162,7 @@ int Dynamixel::FormatCommand(byte command, byte address, byte* buffer)
 {
   byte numberOfParameters = 0;
 
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-  buffer[0] = 0xff;
-  buffer[1] = 0xff;
-  buffer[2] = _id;
-
-  // bodyLength
-  buffer[3] = 4;
+  WriteHeader(buffer, 4); // body is known to be 4 bytes long
 
   //the instruction
   buffer[4] = command;
@@ -222,350 +221,84 @@ int Dynamixel::setSpeed(SerialPort *serialPort, int idAX12, int speed)
   return ret;
 }
 
-int Dynamixel::getSetCWComplianceMarginCommand(byte id, short margin)
+int Dynamixel::setCWAngleLimit(int limit) 
 {
-  int pos = 0;
-  byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // bodyLength
-  buffer[pos++] = 0; //place holder
-
-  //the instruction, query => 3
-  buffer[pos++] = 3;
-
-  // CW Compliance Margin
-  buffer[pos++] = 0x1A;
-  buffer[pos++] = margin;
-  numberOfParameters++;
-
-  // bodyLength
-  buffer[3] = (byte)(numberOfParameters + 3);
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  byte limitH, limitL;
+  toHexHLConversion(limit, &limitH, &limitL);
+  std::vector<byte> data = {limitH, limitL};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["CWAngleLimit"],
+		      data,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }
 
-int Dynamixel::getSetCCWComplianceMarginCommand(byte id, short margin)
+int Dynamixel::setCCWAngleLimit(int limit) 
 {
-  int pos = 0;
-  byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // bodyLength
-  buffer[pos++] = 0; //place holder
-
-  //the instruction, query => 3
-  buffer[pos++] = 3;
-
-  // CCW Compliance Margin
-  buffer[pos++] = 0x1B;
-  buffer[pos++] = margin;
-  numberOfParameters++;
-
-  // bodyLength
-  buffer[3] = (byte)(numberOfParameters + 3);
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  byte limitH, limitL;
+  toHexHLConversion(limit, &limitH, &limitL);
+  std::vector<byte> data = {limitH, limitL};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["CCWAngleLimit"],
+		      data,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }
 
-int Dynamixel::getSetCWComplianceSlopeCommand(byte id, short slope)
+int Dynamixel::setCWComplianceMargin(int margin) 
 {
-  int pos = 0;
-  byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // bodyLength
-  buffer[pos++] = 0; //place holder
-
-  //the instruction, query => 3
-  buffer[pos++] = 3;
-
-  // CCW Compliance Margin
-  buffer[pos++] = 0x1C;
-  buffer[pos++] = slope;
-  numberOfParameters++;
-
-  // bodyLength
-  buffer[3] = (byte)(numberOfParameters + 3);
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  std::vector<byte> data = {margin};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["CWComplianceMargin"],
+		      data,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }
 
-int Dynamixel::getSetCCWComplianceSlopeCommand(byte id, short slope)
+int Dynamixel::setCCWComplianceMargin(int margin) 
 {
-  int pos = 0;
-  byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // bodyLength
-  buffer[pos++] = 0; //place holder
-
-  //the instruction, query => 3
-  buffer[pos++] = 3;
-
-  // CCW Compliance Margin
-  buffer[pos++] = 0x1D;
-  buffer[pos++] = slope;
-  numberOfParameters++;
-
-  // bodyLength
-  buffer[3] = (byte)(numberOfParameters + 3);
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
-}
-
-
-int Dynamixel::getSetCWAngleLimitCommand(byte id, short limit)
-{
-  int pos = 0;
-  byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // bodyLength
-  buffer[pos++] = 0; //place holder
-
-  //the instruction, query => 3
-  buffer[pos++] = 3;
-
-  // CW Compliance Margin
-  buffer[pos++] = 0x06;
-
-  byte hexH = 0;
-  byte hexL = 0;
-  toHexHLConversion(limit, &hexH, &hexL);
-  buffer[pos++] = hexL;
-  numberOfParameters++;
-  buffer[pos++] = hexH;
-  numberOfParameters++;
-
-  // bodyLength
-  buffer[3] = (byte)(numberOfParameters + 3);
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
-}
-int Dynamixel::getSetCCWAngleLimitCommand(byte id, short limit)
-{
-  int pos = 0;
-  byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // bodyLength
-  buffer[pos++] = 0; //place holder
-
-  //the instruction, query => 3
-  buffer[pos++] = 3;
-
-  // CW Compliance Margin
-  buffer[pos++] = 0x08;
-
-  byte hexH = 0;
-  byte hexL = 0;
-  toHexHLConversion(limit, &hexH, &hexL);
-  buffer[pos++] = hexL;
-  numberOfParameters++;
-  buffer[pos++] = hexH;
-  numberOfParameters++;
-
-  // bodyLength
-  buffer[3] = (byte)(numberOfParameters + 3);
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
-}
-
-int Dynamixel::setCWAngleLimit(SerialPort *serialPort, int idAX12, int limit) 
-{
-  int error=0;
-
-  int n=getSetCWAngleLimitCommand(idAX12, limit);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setCWAngleLimit: id=<%i> set at value=<%i>\n", idAX12, limit);
-  else {
-    error=-1;
-    printf("setCWAngleLimit: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-  }
-
-  return error;
-}
-
-int Dynamixel::setCCWAngleLimit(SerialPort *serialPort, int idAX12, int limit) 
-{
-  int error=0;
-
-  int n=getSetCCWAngleLimitCommand(idAX12, limit);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setCCWAngleLimit: id=<%i> set at value=<%i>\n", idAX12, limit);
-  else {
-    error=-1;
-    printf("setCCWAngleLimit: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-  }
-
-  return error;
-}
-
-int Dynamixel::setCWComplianceMargin(SerialPort *serialPort, int idAX12, int margin) 
-{
-  int error=0;
-
-  int n=getSetCWComplianceMarginCommand(idAX12, margin);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setCWComplianceMargin: id=<%i> set at value=<%i>\n", idAX12, margin);
-  else {
-    error=-1;
-    printf("setCWComplianceMargin: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-  }
-
-  return error;
-}
-
-int Dynamixel::setCCWComplianceMargin(SerialPort *serialPort, int idAX12, int margin) 
-{
-  int error=0;
-
-  int n=getSetCCWComplianceMarginCommand(idAX12, margin);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setCCWComplianceMargin: id=<%i> set at value=<%i>\n", idAX12, margin);
-  else {
-    error=-1;
-    printf("setCCWComplianceMargin: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-  }
-
-  return error;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  std::vector<byte> data = {margin};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["CCWComplianceMargin"],
+		      data,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }
 
 int Dynamixel::setCWComplianceSlope(SerialPort *serialPort, int idAX12, int slope) 
 {
-  int error=0;
-
-  int n=getSetCWComplianceSlopeCommand(idAX12, slope);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setCWComplianceSlope: id=<%i> set at value=<%i>\n", idAX12, slope);
-  else {
-    error=-1;
-    printf("setCWComplianceSlope: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-  }
-
-  return error;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  std::vector<byte> data = {margin};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["CWComplianceSlope"],
+		      data,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }
 
 int Dynamixel::setCCWComplianceSlope(SerialPort *serialPort, int idAX12, int slope) 
 {
-  int error=0;
-
-  int n=getSetCCWComplianceMarginCommand(idAX12, slope);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setCCWComplianceSlope: id=<%i> set at value=<%i>\n", idAX12, slope);
-  else {
-    error=-1;
-    printf("setCCWComplianceSlope: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-  }
-
-  return error;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  std::vector<byte> data = {margin};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["CCWComplianceSlope"],
+		      data,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }

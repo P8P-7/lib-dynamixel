@@ -49,6 +49,7 @@ class Dynamixel {
   short fromHexHLConversion(byte hexH, byte hexL);
   byte checkSum(byte  data[], int length);
 
+  void WriteHeader(byte* buffer, byte length = 0);
   int FormatCommand(byte command, byte address, std::vector<byte>, byte* buffer);
   int FormatCommand(byte command, byte address, byte* buffer);
   int SendReceive(byte* buffer, int length, int responseLength);
