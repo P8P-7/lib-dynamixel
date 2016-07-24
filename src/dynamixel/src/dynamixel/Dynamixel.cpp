@@ -1,18 +1,3 @@
-/*------------------------------------------------------------------------------* \
- * This source file is subject to the GPLv3 license that is bundled with this   *
- * package in the file COPYING.                                                 *
- * It is also available through the world-wide-web at this URL:                 *
- * http://www.gnu.org/licenses/gpl-3.0.txt                                      *
- * If you did not receive a copy of the license and are unable to obtain it     *
- * through the world-wide-web, please send an email to                          *
- * siempre.aprendiendo@gmail.com so we can send you a copy immediately.         *
- *                                                                              *
- * @category  Robotics                                                          *
- * @copyright Copyright (c) 2011 Jose Cortes (http://www.siempreaprendiendo.es) *
- * @license   http://www.gnu.org/licenses/gpl-3.0.txt GNU v3 Licence            *
- *                                                                              *
- \*------------------------------------------------------------------------------*/
-
 #include "stdio.h"
 #include <string.h>
 
@@ -20,69 +5,67 @@
 #include "dynamixel/Utils.h"
 
 Dynamixel::Dynamixel()
+  : _recvWaitTimeMS(50)
 {
-  cleanBuffers();
+  Configure();
 }
 
-Dynamixel::~Dynamixel()
+Dynamixel::Configure()
 {
-	
+  Commands["Get"] = 2;
+  Commands["Set"] = 3;
+  CommandResponseLength["Get"] = 8;
+  CommandResponseLength["Set"] = 6;
 }
 
-// pos: input as gotten from getPosition()
-// returns: floating point current angle
-float Dynamixel::posToAngle_28T(short pos)
+Dynamixel::Dynamixel(byte id, SerialPort* port)
+  : _id(id),
+    _port(port),
+    Dynamixel()
 {
-  // ax-12a has an operating range: [0,300] degrees
-  // which corresponds to a digital value range: [0,1024]
-  // this gives us a precision of 0.29 degrees
+}
+
+void MX28::Configure()
+{
+  Addresses["Position"] = 36;
+  Addresses["Goal"] = 30;
+  Dynamixel::Configure();
+}
+
+void AX12::Configure()
+{
+  Addresses["Position"] = 36;
+  Addresses["Goal"] = 30;
+  Dynamixel::Configure();
+}
+
+loat MX28::posToAngle(short pos)
+{
   float angle = 0;
   angle = (float)pos * 0.088f;
   return angle;
 }
 
-// angle: floating point value between 0 and 300 degrees
-// returns: short which can be sent to the motor
-short Dynamixel::angleToPos_28T(float angle)
+short MX28::angleToPos(float angle)
 {
-  // ax-12a has an operating range: [0,300] degrees
-  // which corresponds to a digital value range: [0,1024]
-  // this gives us a precision of 0.29 degrees
   short pos = 0;
   pos = (short)(angle/0.088f);
   return pos;
 }
 
-// pos: input as gotten from getPosition()
-// returns: floating point current angle
-float Dynamixel::posToAngle(short pos)
+float AX12::posToAngle(short pos)
 {
-  // ax-12a has an operating range: [0,300] degrees
-  // which corresponds to a digital value range: [0,1024]
-  // this gives us a precision of 0.29 degrees
   float angle = 0;
   angle = (float)pos * 0.29f;
   return angle;
 }
 
-// angle: floating point value between 0 and 300 degrees
-// returns: short which can be sent to the motor
-short Dynamixel::angleToPos(float angle)
+short AX12::angleToPos(float angle)
 {
-  // ax-12a has an operating range: [0,300] degrees
-  // which corresponds to a digital value range: [0,1024]
-  // this gives us a precision of 0.29 degrees
   short pos = 0;
   pos = (short)(angle/0.29f);
   return pos;
 }
-
-void Dynamixel::cleanBuffers()
-{
-  memset(buffer,0,BufferSize);
-  memset(bufferIn,0,BufferSize);
-}
-
 
 void Dynamixel::toHexHLConversion(short pos, byte *hexH, byte *hexL)
 {    
@@ -95,7 +78,7 @@ short Dynamixel::fromHexHLConversion(byte hexH, byte hexL)
   return (short)((hexL << 8) + hexH);
 }
 
-byte Dynamixel::checkSumatory(byte  data[], int length)
+byte Dynamixel::checkSum(byte  data[], int length)
 {
   int cs = 0;
   for (int i = 2; i < length; i++)
@@ -105,156 +88,107 @@ byte Dynamixel::checkSumatory(byte  data[], int length)
   return (byte)~cs;
 }
 
-int Dynamixel::getReadAX12LoadCommand(byte id)
+int Dynamixel::SendReceive(byte* buffer, int length, int responseLength)
 {
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-  int pos = 0;
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // length = 4
-  buffer[pos++] = 4; //placeholder
-
-  //the instruction, read => 2
-  buffer[pos++] = 2;
-
-  // pos registers 36 and 37
-  buffer[pos++] = 40;
-
-  //bytes to read
-  buffer[pos++] = 2;
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
+  byte recvBuf[_bufferSize] = {0};
+  long l = port->sendArray(buffer, length);
+  Utils::sleepMS(recvWaitTimeMS);
+  int n = port->getArray(recvBuf, length); // receive once to get what we sent
+  memset(recvBuf, 0, responseLength);
+  n = port->getArray(recvBuf, responseLength);  // receive again to get the right data
+  int retVal = -2;
+  if (n >= responseLength && responseLength == 8) {
+    retVal = fromHexHLConversion(recvBuf[5], recvBuf[6]);
+  }
+  else if (n > 4) {
+    retVal = recvBuf[4];
+  }
+  return retVal;
 }
 
-int Dynamixel::getReadAX12PositionCommand(byte id)
+int Dynamixel::FormatCommand(byte command, byte address, short value, byte* buffer)
 {
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-  int pos = 0;
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // length = 4
-  buffer[pos++] = 4; //placeholder
-
-  //the instruction, read => 2
-  buffer[pos++] = 2;
-
-  // pos registers 36 and 37
-  buffer[pos++] = 36;
-
-  //bytes to read
-  buffer[pos++] = 2;
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
-}
-
-int Dynamixel::getSetAX12PositionCommand(byte id, short goal)
-{
-  int pos = 0;
   byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
 
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
+  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
+  buffer[0] = 0xff;
+  buffer[1] = 0xff;
+  buffer[2] = _id;
 
   // bodyLength
-  buffer[pos++] = 0; //place holder
+  buffer[3] = 0; //place holder
 
-  //the instruction, query => 3
-  buffer[pos++] = 3;
+  //the instruction
+  buffer[4] = command;
 
-  // goal registers 30 and 31
-  buffer[pos++] = 0x1E;// 30;
+  // start of goal registers
+  buffer[5] = address;
 
   //bytes to write
   byte hexH = 0;
   byte hexL = 0;
-  toHexHLConversion(goal, &hexH, &hexL);
-  buffer[pos++] = hexL;
-  numberOfParameters++;
-  buffer[pos++] = hexH;
-  numberOfParameters++;
+  toHexHLConversion(value, &hexH, &hexL);
+  buffer[6] = hexL;
+  buffer[7] = hexH;
+  numberOfParameters = 2;
 
   // bodyLength
   buffer[3] = (byte)(numberOfParameters + 3);
 
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
+  byte checksum = checkSumatory(buffer, 8);
+  buffer[8] = checksum;
 
-  return pos;
+  return 9;
 }
 
-int setResponseLength = 6;
-int getResponseLength = 8;
+int Dynamixel::FormatCommand(byte command, byte address, byte* buffer)
+{
+  byte numberOfParameters = 0;
 
-int Dynamixel::getPosition(SerialPort *serialPort, int idAX12) 
+  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
+  buffer[0] = 0xff;
+  buffer[1] = 0xff;
+  buffer[2] = _id;
+
+  // bodyLength
+  buffer[3] = 4;
+
+  //the instruction
+  buffer[4] = command;
+
+  // start of goal registers
+  buffer[5] = address;
+
+  //bytes to read
+  buffer[6] = 2;
+  byte checksum = checkSum(buffer, 7);
+  buffer[7] = checksum;
+
+  return 9;
+}
+
+int Dynamixel::getPosition() 
 {
   int ret=0;
+  byte sendBuf[BufferSize] = {0};
+  ret = FormatCommand(Commands["Get"],
+		      Addresses["Position"],
+		      sendBuf);
 
-  int n=getReadAX12PositionCommand(idAX12);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, getResponseLength);
-  //bf(bufferIn,getResponseLength);
-
-  short pos = -1;
-  if (n>7)
-    {
-      pos = fromHexHLConversion(bufferIn[5], bufferIn[6]);				
-    }
-
-  printf("getPosition: id=<%i> pos=<%i>\n", idAX12, pos);
-  if (pos<0)
-    ret=-2;
-  else
-    ret=pos;
-
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Get"]);
   return ret;
 }
 
-int Dynamixel::setPosition(SerialPort *serialPort, int idAX12, int position) 
+int Dynamixel::setPosition(int position) 
 {
-  int error=0;
-
-  int n=getSetAX12PositionCommand(idAX12, position);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setPosition: id=<%i> set at pos=<%i>\n", idAX12, position);
-  else {
-    error=-1;
-    printf("setPosition: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
-  }
-
-  return error;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["Goal"],
+		      position,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }
 
 int Dynamixel::getSetAX12SpeedCommand(byte id, short speed)
@@ -315,7 +249,6 @@ int Dynamixel::setSpeed(SerialPort *serialPort, int idAX12, int speed)
   else {
     error=-1;
     printf("setSpeed: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
   }
 
   return error;
@@ -534,7 +467,6 @@ int Dynamixel::setCWAngleLimit(SerialPort *serialPort, int idAX12, int limit)
   else {
     error=-1;
     printf("setCWAngleLimit: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
   }
 
   return error;
@@ -561,7 +493,6 @@ int Dynamixel::setCCWAngleLimit(SerialPort *serialPort, int idAX12, int limit)
   else {
     error=-1;
     printf("setCCWAngleLimit: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
   }
 
   return error;
@@ -588,7 +519,6 @@ int Dynamixel::setCWComplianceMargin(SerialPort *serialPort, int idAX12, int mar
   else {
     error=-1;
     printf("setCWComplianceMargin: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
   }
 
   return error;
@@ -615,7 +545,6 @@ int Dynamixel::setCCWComplianceMargin(SerialPort *serialPort, int idAX12, int ma
   else {
     error=-1;
     printf("setCCWComplianceMargin: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
   }
 
   return error;
@@ -642,7 +571,6 @@ int Dynamixel::setCWComplianceSlope(SerialPort *serialPort, int idAX12, int slop
   else {
     error=-1;
     printf("setCWComplianceSlope: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
   }
 
   return error;
@@ -669,22 +597,7 @@ int Dynamixel::setCCWComplianceSlope(SerialPort *serialPort, int idAX12, int slo
   else {
     error=-1;
     printf("setCCWComplianceSlope: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-    bf(bufferIn, n);
   }
 
   return error;
-}
-
-
-void Dynamixel::bf (byte *buffer, int n)
-{
-  printf ("Response (length <%i>): ",n);
-  for (int i=0;i<n;i++)
-    {
-      if (i<(n-1))
-	printf("%i,", buffer[i]);
-      else
-	printf("%i",buffer[i]);
-    }
-  printf("\n");
 }
