@@ -28,14 +28,28 @@ Dynamixel::Dynamixel(byte id, SerialPort* port)
 void MX28::Configure()
 {
   Addresses["Position"] = 36;
+  Addresses["Speed"] = 32;
   Addresses["Goal"] = 30;
+  Addresses["CCWComplianceSlope"] = 29;
+  Addresses["CWComplianceSlope"] = 28;
+  Addresses["CCWComplianceMargin"] = 27;
+  Addresses["CWComplianceMargin"] = 26;
+  Addresses["CCWAngleLimit"] = 8;
+  Addresses["CWAngleLimit"] = 6;
   Dynamixel::Configure();
 }
 
 void AX12::Configure()
 {
   Addresses["Position"] = 36;
+  Addresses["Speed"] = 32;
   Addresses["Goal"] = 30;
+  Addresses["CCWComplianceSlope"] = 29;
+  Addresses["CWComplianceSlope"] = 28;
+  Addresses["CCWComplianceMargin"] = 27;
+  Addresses["CWComplianceMargin"] = 26;
+  Addresses["CCWAngleLimit"] = 8;
+  Addresses["CWAngleLimit"] = 6;
   Dynamixel::Configure();
 }
 
@@ -106,7 +120,7 @@ int Dynamixel::SendReceive(byte* buffer, int length, int responseLength)
   return retVal;
 }
 
-int Dynamixel::FormatCommand(byte command, byte address, short value, byte* buffer)
+int Dynamixel::FormatCommand(byte command, byte address, std::vector<byte> values, byte* buffer)
 {
   byte numberOfParameters = 0;
 
@@ -125,18 +139,16 @@ int Dynamixel::FormatCommand(byte command, byte address, short value, byte* buff
   buffer[5] = address;
 
   //bytes to write
-  byte hexH = 0;
-  byte hexL = 0;
-  toHexHLConversion(value, &hexH, &hexL);
-  buffer[6] = hexL;
-  buffer[7] = hexH;
-  numberOfParameters = 2;
+  for (int i=0; i<values.size(); i++) {
+    buffer[6+i] = values[i];
+  }
+  numberOfParameters = values.size();
 
   // bodyLength
   buffer[3] = (byte)(numberOfParameters + 3);
 
-  byte checksum = checkSumatory(buffer, 8);
-  buffer[8] = checksum;
+  byte checksum = checkSumatory(buffer, 6 + numberOfParameters);
+  buffer[6 + numberOfParameters] = checksum;
 
   return 9;
 }
@@ -161,6 +173,7 @@ int Dynamixel::FormatCommand(byte command, byte address, byte* buffer)
 
   //bytes to read
   buffer[6] = 2;
+
   byte checksum = checkSum(buffer, 7);
   buffer[7] = checksum;
 
@@ -183,75 +196,30 @@ int Dynamixel::setPosition(int position)
 {
   int ret = 0;
   byte sendBuf[BufferSize] = {0};
+  byte posH, posL;
+  toHexHLConversion(position, &posH, &posL);
+  std::vector<byte> data = {speedH, speedL};
   ret = FormatCommand(Commands["Set"],
 		      Addresses["Goal"],
-		      position,
+		      data,
 		      sendBuf);
   ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
   return ret;
 }
 
-int Dynamixel::getSetAX12SpeedCommand(byte id, short speed)
-{
-  int pos = 0;
-  byte numberOfParameters = 0;
-  //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK SUM
-
-  buffer[pos++] = 0xff;
-  buffer[pos++] = 0xff;
-  buffer[pos++] = id;
-
-  // bodyLength
-  buffer[pos++] = 0; //place holder
-
-  //the instruction, query => 3
-  buffer[pos++] = 3;
-
-  // goal registers 32 and 33
-  buffer[pos++] = 0x20;// 20;
-
-  //bytes to write
-  byte hexH = 0;
-  byte hexL = 0;
-  toHexHLConversion(speed, &hexH, &hexL);
-  buffer[pos++] = hexL;
-  numberOfParameters++;
-  buffer[pos++] = hexH;
-  numberOfParameters++;
-
-  // bodyLength
-  buffer[3] = (byte)(numberOfParameters + 3);
-
-  byte checksum = checkSumatory(buffer, pos);
-  buffer[pos++] = checksum;
-
-  return pos;
-}
-
 int Dynamixel::setSpeed(SerialPort *serialPort, int idAX12, int speed) 
 {
-  int error=0;
-
-  int n=getSetAX12SpeedCommand(idAX12, speed);
-  //bf(buffer,n);
-  long l=serialPort->sendArray(buffer,n);
-  Utils::sleepMS(waitTimeForResponse);
-
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, n);
-  //bf(bufferIn,n);
-  memset(bufferIn,0,BufferSize);
-  n=serialPort->getArray(bufferIn, setResponseLength);
-  //bf(bufferIn,setResponseLength);
-
-  if (n>4 && bufferIn[4] == 0)
-    printf("setSpeed: id=<%i> set at pos=<%i>\n", idAX12, speed);
-  else {
-    error=-1;
-    printf("setSpeed: id=<%i> error: <%i>\n", idAX12, bufferIn[4]);
-  }
-
-  return error;
+  int ret = 0;
+  byte sendBuf[BufferSize] = {0};
+  byte speedH, speedL;
+  toHexHLConversion(speed, &speedH, &speedL);
+  std::vector<byte> data = {speedH, speedL};
+  ret = FormatCommand(Commands["Set"],
+		      Addresses["Speed"],
+		      data,
+		      sendBuf);
+  ret = SendReceive(sendBuf, ret, CommandResponseLength["Set"]);
+  return ret;
 }
 
 int Dynamixel::getSetCWComplianceMarginCommand(byte id, short margin)

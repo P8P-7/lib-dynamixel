@@ -4,6 +4,7 @@
 typedef unsigned char byte;
 
 #include <map>
+#include <vector>
 #include <string>
 #include "SerialPort.h"
 
@@ -48,7 +49,8 @@ class Dynamixel {
   short fromHexHLConversion(byte hexH, byte hexL);
   byte checkSum(byte  data[], int length);
 
-  int FormatCommand(byte command, byte address, short value, byte* buffer);
+  int FormatCommand(byte command, byte address, std::vector<byte>, byte* buffer);
+  int FormatCommand(byte command, byte address, byte* buffer);
   int SendReceive(byte* buffer, int length, int responseLength);
 
   void Configure() = 0;
