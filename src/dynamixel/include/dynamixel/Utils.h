@@ -28,8 +28,8 @@ class Utils {
     *hexL = (byte)pos;
   }
 
-  static short ConvertFromHL(byte hexH, byte hexL) {
-    return (short)((hexL << 8) + hexH);
+  static short ConvertFromHL(byte hexL, byte hexH) {
+    return (short)((hexH << 8) + hexL);
   }
 
   static byte CheckSum(byte  data[], int length) {

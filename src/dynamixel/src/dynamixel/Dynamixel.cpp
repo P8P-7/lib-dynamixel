@@ -143,7 +143,7 @@ int Dynamixel::setGoalPosition(int goal)
 {
   byte posH, posL;
   Utils::ConvertToHL(goal, &posH, &posL);
-  std::vector<byte> data = {posH, posL};
+  std::vector<byte> data = {posL, posH};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "Goal", data, &returnData);
 }
@@ -152,7 +152,7 @@ int Dynamixel::setMovingSpeed(int speed)
 {
   byte speedH, speedL;
   Utils::ConvertToHL(speed, &speedH, &speedL);
-  std::vector<byte> data = {speedH, speedL};
+  std::vector<byte> data = {speedL, speedH};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "MovingSpeed", data, &returnData);
 }
@@ -161,7 +161,7 @@ int Dynamixel::setCWAngleLimit(int limit)
 {
   byte limitH, limitL;
   Utils::ConvertToHL(limit, &limitH, &limitL);
-  std::vector<byte> data = {limitH, limitL};
+  std::vector<byte> data = {limitL, limitH};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "CWAngleLimit", data, &returnData);
 }
@@ -170,7 +170,7 @@ int Dynamixel::setCCWAngleLimit(int limit)
 {
   byte limitH, limitL;
   Utils::ConvertToHL(limit, &limitH, &limitL);
-  std::vector<byte> data = {limitH, limitL};
+  std::vector<byte> data = {limitL, limitH};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);
 }

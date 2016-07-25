@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
   else if (numBytes == 2) {
     byte h, l;
     Utils::ConvertToHL(iData, &h, &l);
-    data.push_back(h);
     data.push_back(l);
+    data.push_back(h);
   }
 
   SerialPort port;
@@ -102,6 +102,9 @@ int main(int argc, char** argv) {
     }
     std::cout << "received: " <<
       retVal << " : " << recvVal << std::endl;
+
+    std::cout << "position: " << 
+      motor->getPosition() << std::endl;
   }
   else {
     std::cout << "Couldn't open " << 
