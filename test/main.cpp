@@ -4,11 +4,16 @@
 
 int main(int argc, char** argv) {
   int motorId = 1;
+  int numBytes = 1;
+  int iData = 2;
   std::string command = "Get";
   std::string address = "Position";
   std::string motorType = "MX28";
   std::string portName = "/dev/ttyO5";
   int baudRate = 9600;
+
+  std::vector<byte> data;
+  std::vector<byte> recvData;
 
   // parse command line args
   for (int i=1; i<argc; i++) {
@@ -17,6 +22,9 @@ int main(int argc, char** argv) {
     }
     else if (!strcmp(argv[i],"--motorId")) {
       motorId = atoi(argv[++i]);
+    }
+    else if (!strcmp(argv[i],"--numBytes")) {
+      numBytes = atoi(argv[++i]);
     }
     else if (!strcmp(argv[i],"--command")) {
       command = argv[++i];
@@ -29,6 +37,9 @@ int main(int argc, char** argv) {
     }
     else if (!strcmp(argv[i],"--motorType")) {
       motorType = argv[++i];
+    }
+    else if (!strcmp(argv[i],"--data")) {
+      iData = std::strtoul(argv[++i], 0, 10);
     }
   }
 
@@ -47,6 +58,16 @@ int main(int argc, char** argv) {
 
   motor->Configure();
 
+  if (numBytes == 1) {
+    data.push_back(iData);
+  }
+  else if (numBytes == 2) {
+    byte h, l;
+    Utils::ConvertToHL(iData, &h, &l);
+    data.push_back(h);
+    data.push_back(l);
+  }
+
   SerialPort port;
   if (port.connect((char *)portName.c_str(), baudRate) != 0) {
 
@@ -54,6 +75,13 @@ int main(int argc, char** argv) {
     }
     else if (command == "Set") {
     }
+
+    int retVal;
+    retVal = motor->SendReceiveCommand(command,
+				       address,
+				       data,
+				       &recvData);
+				       
     
   }
 
