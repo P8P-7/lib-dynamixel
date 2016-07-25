@@ -46,6 +46,21 @@ void Dynamixel::Configure()
   Addresses["ID"] = 3;
 }
 
+byte Dynamixel::GetAddress(std::string address)
+{
+  return Addresses[address];
+}
+
+byte Dynamixel::GetCommand(std::string command)
+{
+  return Commands[command];
+}
+
+int Dynamixel::GetResponseLength(std::string command)
+{
+  return ResponseLength[command];
+}
+
 int Dynamixel::SendReceiveCommand(std::string command, std::string address,
 				  std::vector<byte> data,
 				  std::vector<byte>* outData)

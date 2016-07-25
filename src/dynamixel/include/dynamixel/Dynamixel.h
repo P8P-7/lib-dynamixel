@@ -18,10 +18,18 @@ class Dynamixel {
 
   void Configure();
   void SetSerialFeedback(bool fb);
+  
+  byte GetAddress(std::string address);
+  byte GetCommand(std::string command);
+  int GetResponseLength(std::string command);
 
-  int SendReceiveCommand(std::string command, std::string address, 
+  int SendReceiveCommand(std::string command, 
+			 std::string address, 
 			 std::vector<byte> data,
 			 std::vector<byte>* outData);
+
+  int FormatCommand(byte command, byte address, 
+		    std::vector<byte>, byte* buffer);
 
   int setID(byte id);
   int setBaudRate(byte baudRate);
@@ -37,8 +45,6 @@ class Dynamixel {
   SerialPort* _port;
   int _recvWaitTimeMS;
   bool _serialFeedback;
-
-  int FormatCommand(byte command, byte address, std::vector<byte>, byte* buffer);
 
  protected:
   std::map<std::string, byte> Addresses;

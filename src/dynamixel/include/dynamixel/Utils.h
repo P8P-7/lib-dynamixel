@@ -12,6 +12,14 @@
 
 class Utils {
  public:
+  static void PrintBuffer(byte data[], int length) {
+    printf("buffer:");
+    for (int i=0; i<length; i++) {
+      printf(" %02X", data[i]);
+    }
+    printf("\n");
+  }
+
   static void ConvertToHL(short pos, byte *hexH, byte *hexL) {
     *hexH = (byte)(pos >> 8);
     *hexL = (byte)pos;

@@ -75,6 +75,17 @@ int main(int argc, char** argv) {
 
     motor->Configure();
 
+    // For debugging only:
+    byte buffer[1024];
+    int length = motor->
+      FormatCommand(motor->GetCommand(command),
+		    motor->GetAddress(address),
+		    data,
+		    buffer);
+
+    Utils::PrintBuffer(buffer, length);
+    // end for debugging
+
     int retVal;
     retVal = motor->SendReceiveCommand(command,
 				       address,
