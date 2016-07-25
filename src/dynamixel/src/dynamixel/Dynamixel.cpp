@@ -4,6 +4,9 @@
 #include "dynamixel/Dynamixel.h"
 #include "dynamixel/Utils.h"
 
+//
+// Base Dynamixel Class
+//
 Dynamixel::Dynamixel()
   : _recvWaitTimeMS(50)
 {
@@ -21,68 +24,6 @@ void Dynamixel::Configure()
   Commands["Set"] = 3;
   ResponseLength["Get"] = 8;
   ResponseLength["Set"] = 6;
-}
-
-//
-// MX28
-//
-void MX28::Configure()
-{
-  Addresses["Position"] = 36;
-  Addresses["Speed"] = 32;
-  Addresses["Goal"] = 30;
-  Addresses["CCWComplianceSlope"] = 29;
-  Addresses["CWComplianceSlope"] = 28;
-  Addresses["CCWComplianceMargin"] = 27;
-  Addresses["CWComplianceMargin"] = 26;
-  Addresses["CCWAngleLimit"] = 8;
-  Addresses["CWAngleLimit"] = 6;
-  Dynamixel::Configure();
-}
-
-float MX28::posToAngle(short pos)
-{
-  float angle = 0;
-  angle = (float)pos * 0.088f;
-  return angle;
-}
-
-short MX28::angleToPos(float angle)
-{
-  short pos = 0;
-  pos = (short)(angle/0.088f);
-  return pos;
-}
-
-//
-// AX12
-//
-void AX12::Configure()
-{
-  Addresses["Position"] = 36;
-  Addresses["Speed"] = 32;
-  Addresses["Goal"] = 30;
-  Addresses["CCWComplianceSlope"] = 29;
-  Addresses["CWComplianceSlope"] = 28;
-  Addresses["CCWComplianceMargin"] = 27;
-  Addresses["CWComplianceMargin"] = 26;
-  Addresses["CCWAngleLimit"] = 8;
-  Addresses["CWAngleLimit"] = 6;
-  Dynamixel::Configure();
-}
-
-float AX12::posToAngle(short pos)
-{
-  float angle = 0;
-  angle = (float)pos * 0.29f;
-  return angle;
-}
-
-short AX12::angleToPos(float angle)
-{
-  short pos = 0;
-  pos = (short)(angle/0.29f);
-  return pos;
 }
 
 int Dynamixel::SendReceiveCommand(std::string command, std::string address,
@@ -199,28 +140,127 @@ int Dynamixel::setCCWAngleLimit(int limit)
   return SendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);
 }
 
-int AX12::setCWComplianceMargin(int margin) 
+//
+// MX28
+//
+void MX28::Configure()
+{
+  Dynamixel::Configure();
+  Addresses["Punch"] = 48;
+  Addresses["Moving"] = 46;
+  Addresses["Load"] = 40;
+  Addresses["Present Speed"] = 38;
+  Addresses["Position"] = 36;
+  Addresses["Torque Limit"] = 34;
+  Addresses["Moving Speed"] = 32;
+  Addresses["Goal"] = 30;
+  Addresses["P Gain"] = 28;
+  Addresses["I Gain"] = 27;
+  Addresses["D Gain"] = 26;
+  Addresses["Max Torque"] = 14;
+  Addresses["CCWAngleLimit"] = 8;
+  Addresses["CWAngleLimit"] = 6;
+  Addresses["Baud Rate"] = 4;
+  Addresses["ID"] = 3;
+}
+
+float MX28::posToAngle(short pos)
+{
+  float angle = 0;
+  angle = (float)pos * 0.088f;
+  return angle;
+}
+
+short MX28::angleToPos(float angle)
+{
+  short pos = 0;
+  pos = (short)(angle/0.088f);
+  return pos;
+}
+
+int MX28::setPGain(byte pGain)
+{
+  std::vector<byte> data = {pGain};
+  std::vector<byte> returnData;
+  return SendReceiveCommand("Set", "P Gain", data, &returnData);
+}
+
+int MX28::setIGain(byte iGain)
+{
+  std::vector<byte> data = {iGain};
+  std::vector<byte> returnData;
+  return SendReceiveCommand("Set", "I Gain", data, &returnData);
+}
+
+int MX28::setDGain(byte dGain)
+{
+  std::vector<byte> data = {dGain};
+  std::vector<byte> returnData;
+  return SendReceiveCommand("Set", "D Gain", data, &returnData);
+}
+
+//
+// AX12
+//
+void AX12::Configure()
+{
+
+  Addresses["Punch"] = 48;
+  Addresses["Moving"] = 46;
+  Addresses["Load"] = 40;
+  Addresses["Present Speed"] = 38;
+  Addresses["Position"] = 36;
+  Addresses["Torque Limit"] = 34;
+  Addresses["Moving Speed"] = 32;
+  Addresses["Goal"] = 30;
+  Addresses["CCWComplianceSlope"] = 29;
+  Addresses["CWComplianceSlope"] = 28;
+  Addresses["CCWComplianceMargin"] = 27;
+  Addresses["CWComplianceMargin"] = 26;
+  Addresses["Max Torque"] = 14;
+  Addresses["CCWAngleLimit"] = 8;
+  Addresses["CWAngleLimit"] = 6;
+  Addresses["Baud Rate"] = 4;
+  Addresses["ID"] = 3;
+  Dynamixel::Configure();
+}
+
+float AX12::posToAngle(short pos)
+{
+  float angle = 0;
+  angle = (float)pos * 0.29f;
+  return angle;
+}
+
+short AX12::angleToPos(float angle)
+{
+  short pos = 0;
+  pos = (short)(angle/0.29f);
+  return pos;
+}
+
+int AX12::setCWComplianceMargin(byte margin) 
 {
   std::vector<byte> data = {margin};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "CWComplianceMargin", data, &returnData);
 }
 
-int AX12::setCCWComplianceMargin(int margin) 
+int AX12::setCCWComplianceMargin(byte margin) 
 {
   std::vector<byte> data = {margin};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "CCWComplianceMargin", data, &returnData);
 }
 
-int AX12::setCWComplianceSlope(int slope) 
+int AX12::setCWComplianceSlope(byte slope) 
 {
   std::vector<byte> data = {slope};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "CWComplianceSlope", data, &returnData);
 }
 
-int AX12::setCCWComplianceSlope(int slope) 
+int AX12::setCCWComplianceSlope(byte slope) 
 {
   std::vector<byte> data = {slope};
   std::vector<byte> returnData;

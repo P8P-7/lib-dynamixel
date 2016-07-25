@@ -54,11 +54,11 @@ class AX12 : Dynamixel {
   static float posToAngle(short pos);
   static short angleToPos(float angle);
 
-  int setCCWComplianceMargin(int margin);
-  int setCWComplianceMargin(int margin);
+  int setCCWComplianceMargin(byte margin);
+  int setCWComplianceMargin(byte margin);
 
-  int setCCWComplianceSlope(int slope);
-  int setCWComplianceSlope(int slope);
+  int setCCWComplianceSlope(byte slope);
+  int setCWComplianceSlope(byte slope);
 };
 
 class MX28 : Dynamixel {
@@ -68,9 +68,9 @@ class MX28 : Dynamixel {
   static float posToAngle(short pos);
   static short angleToPos(float angle);
 
-  int setPGain(int pGain);
-  int setIGain(int pGain);
-  int setDGain(int pGain);
+  int setPGain(byte pGain);
+  int setIGain(byte iGain);
+  int setDGain(byte dGain);
 };
 
 #endif
