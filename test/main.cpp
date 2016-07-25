@@ -45,19 +45,6 @@ int main(int argc, char** argv) {
 
   Dynamixel* motor;
 
-  if (motorType == "AX12") {
-    motor = new AX12();
-  }
-  else if (motorType == "MX28") {
-    motor = new MX28();
-  }
-  else {
-    std::cout << "Error: motor type not supported!\n";
-    return -1;
-  }
-
-  motor->Configure();
-
   if (numBytes == 1) {
     data.push_back(iData);
   }
@@ -69,12 +56,24 @@ int main(int argc, char** argv) {
   }
 
   SerialPort port;
+  std::cout << "Connecting to: " << 
+    portName << ":" << baudRate << std::endl;
   if (port.connect((char *)portName.c_str(), baudRate) != 0) {
 
-    if (command == "Get") {
+    std::cout << "Success\n";
+
+    if (motorType == "AX12") {
+      motor = new AX12(motorId, &port);
     }
-    else if (command == "Set") {
+    else if (motorType == "MX28") {
+      motor = new MX28(motorId, &port);
     }
+    else {
+      std::cout << "Error: motor type not supported!\n";
+      return -1;
+    }
+
+    motor->Configure();
 
     int retVal;
     retVal = motor->SendReceiveCommand(command,
@@ -82,7 +81,21 @@ int main(int argc, char** argv) {
 				       data,
 				       &recvData);
 				       
-    
+    int recvVal = 0;
+    if (recvData.size() == 1) {
+      recvVal = recvData[0];
+    }
+    else if (recvData.size() == 2) {
+      recvVal = Utils::ConvertFromHL(recvData[0],recvData[1]);
+    }
+    std::cout << "received: " <<
+      retVal << " : " << recvVal << std::endl;
+  }
+  else {
+    std::cout << "Couldn't open " << 
+      portName << " at baudRate " << 
+      baudRate << std::endl;
+    return -1;
   }
 
   return 0;

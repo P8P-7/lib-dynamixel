@@ -8,7 +8,8 @@
 // Base Dynamixel Class
 //
 Dynamixel::Dynamixel()
-  : _recvWaitTimeMS(5)
+  : _recvWaitTimeMS(5),
+    _serialFeedback(false)
 {
 }
 
@@ -16,6 +17,11 @@ Dynamixel::Dynamixel(byte id, SerialPort* port)
   : _id(id),
     _port(port)
 {
+}
+
+void Dynamixel::SetSerialFeedback(bool fb)
+{
+  _serialFeedback = fb;
 }
 
 void Dynamixel::Configure()
@@ -57,8 +63,11 @@ int Dynamixel::SendReceiveCommand(std::string command, std::string address,
   // sleep
   Utils::sleepMS(_recvWaitTimeMS);
   // recv 1
-  int recvLen = _port->getArray(recvBuf, length); // receive once to get what we sent
-  memset(recvBuf, 0, responseLength+1);
+  int recvLen;
+  if (_serialFeedback) {
+    recvLen = _port->getArray(recvBuf, length); // receive once to get what we sent
+    memset(recvBuf, 0, responseLength+1);
+  }
   // recv 2
   recvLen = _port->getArray(recvBuf, responseLength); // receive again to get the real data
   // check data
@@ -157,6 +166,11 @@ int Dynamixel::setCCWAngleLimit(int limit)
 //
 // MX28
 //
+MX28::MX28(byte id, SerialPort* port)
+  : Dynamixel(id, port)
+{
+}
+
 void MX28::Configure()
 {
   Dynamixel::Configure();
@@ -203,6 +217,11 @@ int MX28::setDGain(byte dGain)
 //
 // AX12
 //
+AX12::AX12(byte id, SerialPort* port)
+  : Dynamixel(id, port)
+{
+}
+
 void AX12::Configure()
 {
   Dynamixel::Configure();

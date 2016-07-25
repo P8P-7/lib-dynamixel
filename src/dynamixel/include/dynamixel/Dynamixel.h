@@ -17,6 +17,7 @@ class Dynamixel {
   Dynamixel(byte id, SerialPort* port);
 
   void Configure();
+  void SetSerialFeedback(bool fb);
 
   int SendReceiveCommand(std::string command, std::string address, 
 			 std::vector<byte> data,
@@ -35,6 +36,7 @@ class Dynamixel {
   byte _id;
   SerialPort* _port;
   int _recvWaitTimeMS;
+  bool _serialFeedback;
 
   int FormatCommand(byte command, byte address, std::vector<byte>, byte* buffer);
 
@@ -47,6 +49,8 @@ class Dynamixel {
 
 class AX12 : public Dynamixel {
  public:
+  AX12(byte id, SerialPort* port);
+
   void Configure();
 
   static float posToAngle(short pos);
@@ -61,6 +65,8 @@ class AX12 : public Dynamixel {
 
 class MX28 : public Dynamixel {
  public:
+  MX28(byte id, SerialPort* port);
+
   void Configure();
 
   static float posToAngle(short pos);
