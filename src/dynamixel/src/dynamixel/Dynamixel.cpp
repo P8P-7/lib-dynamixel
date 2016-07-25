@@ -28,11 +28,10 @@ void Dynamixel::Configure()
 {
   Commands["Get"] = 2;
   Commands["Set"] = 3;
-  ResponseLength["Get"] = 8;
-  ResponseLength["Set"] = 6;
 
   Addresses["Punch"] = 48;
   Addresses["Moving"] = 46;
+  Addresses["PresentTemperature"] = 43;
   Addresses["Load"] = 40;
   Addresses["PresentSpeed"] = 38;
   Addresses["Position"] = 36;
@@ -56,11 +55,6 @@ byte Dynamixel::GetCommand(std::string command)
   return Commands[command];
 }
 
-int Dynamixel::GetResponseLength(std::string command)
-{
-  return ResponseLength[command];
-}
-
 int Dynamixel::SendReceiveCommand(std::string command, std::string address,
 				  std::vector<byte> data,
 				  std::vector<byte>* outData)
@@ -68,7 +62,10 @@ int Dynamixel::SendReceiveCommand(std::string command, std::string address,
   byte sendBuf[BufferSize] = {0};
   byte recvBuf[BufferSize] = {0};
   int retVal = 0;
-  int responseLength = ResponseLength[command];
+  int responseLength = 6;
+  if (command == "Get") {
+    responseLength += data[0]; 
+  }
   int length = FormatCommand(Commands[command],
 			     Addresses[address],
 			     data,

@@ -21,7 +21,6 @@ class Dynamixel {
   
   byte GetAddress(std::string address);
   byte GetCommand(std::string command);
-  int GetResponseLength(std::string command);
 
   int SendReceiveCommand(std::string command, 
 			 std::string address, 
@@ -49,8 +48,6 @@ class Dynamixel {
  protected:
   std::map<std::string, byte> Addresses;
   std::map<std::string, byte> Commands;
-  std::map<std::string, int> ResponseLength;
-
 };
 
 class AX12 : public Dynamixel {
