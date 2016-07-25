@@ -52,6 +52,7 @@ class Dynamixel {
 
 class AX12 : public Dynamixel {
  public:
+  AX12();
   AX12(byte id, SerialPort* port);
 
   void Configure();
@@ -68,6 +69,7 @@ class AX12 : public Dynamixel {
 
 class MX28 : public Dynamixel {
  public:
+  MX28();
   MX28(byte id, SerialPort* port);
 
   void Configure();

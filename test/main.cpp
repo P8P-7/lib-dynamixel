@@ -12,6 +12,11 @@ int main(int argc, char** argv) {
   std::string portName = "/dev/ttyO5";
   int baudRate = 9600;
 
+  // motor objects
+  Dynamixel* motor;
+  AX12 ax12;
+  MX28 mx28;
+
   std::vector<byte> data;
   std::vector<byte> recvData;
 
@@ -43,8 +48,6 @@ int main(int argc, char** argv) {
     }
   }
 
-  Dynamixel* motor;
-
   if (numBytes == 1) {
     data.push_back(iData);
   }
@@ -62,10 +65,13 @@ int main(int argc, char** argv) {
 
     std::cout << "Success\n";
 
+    // configure the motor objects
     if (motorType == "AX12") {
+      ax12 = AX12(motorId, &port);
       motor = new AX12(motorId, &port);
     }
     else if (motorType == "MX28") {
+      mx28 = MX28(motorId, &port);
       motor = new MX28(motorId, &port);
     }
     else {

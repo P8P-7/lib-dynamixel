@@ -178,6 +178,11 @@ int Dynamixel::setCCWAngleLimit(int limit)
 //
 // MX28
 //
+MX28::MX28()
+  : Dynamixel()
+{
+}
+
 MX28::MX28(byte id, SerialPort* port)
   : Dynamixel(id, port)
 {
@@ -229,6 +234,11 @@ int MX28::setDGain(byte dGain)
 //
 // AX12
 //
+AX12::AX12()
+  : Dynamixel()
+{
+}
+
 AX12::AX12(byte id, SerialPort* port)
   : Dynamixel(id, port)
 {
