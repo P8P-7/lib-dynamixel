@@ -8,7 +8,7 @@
 // Base Dynamixel Class
 //
 Dynamixel::Dynamixel()
-  : _recvWaitTimeMS(50)
+  : _recvWaitTimeMS(5)
 {
 }
 
@@ -24,6 +24,20 @@ void Dynamixel::Configure()
   Commands["Set"] = 3;
   ResponseLength["Get"] = 8;
   ResponseLength["Set"] = 6;
+
+  Addresses["Punch"] = 48;
+  Addresses["Moving"] = 46;
+  Addresses["Load"] = 40;
+  Addresses["Present Speed"] = 38;
+  Addresses["Position"] = 36;
+  Addresses["Torque Limit"] = 34;
+  Addresses["Moving Speed"] = 32;
+  Addresses["Goal"] = 30;
+  Addresses["Max Torque"] = 14;
+  Addresses["CCWAngleLimit"] = 8;
+  Addresses["CWAngleLimit"] = 6;
+  Addresses["Baud Rate"] = 4;
+  Addresses["ID"] = 3;
 }
 
 int Dynamixel::SendReceiveCommand(std::string command, std::string address,
@@ -104,22 +118,22 @@ int Dynamixel::getPosition()
   return -1;
 }
 
-int Dynamixel::setPosition(int position) 
+int Dynamixel::setGoalPosition(int goal) 
 {
   byte posH, posL;
-  Utils::ConvertToHL(position, &posH, &posL);
+  Utils::ConvertToHL(goal, &posH, &posL);
   std::vector<byte> data = {posH, posL};
   std::vector<byte> returnData;
   return SendReceiveCommand("Set", "Goal", data, &returnData);
 }
 
-int Dynamixel::setSpeed(int speed) 
+int Dynamixel::setMovingSpeed(int speed) 
 {
   byte speedH, speedL;
   Utils::ConvertToHL(speed, &speedH, &speedL);
   std::vector<byte> data = {speedH, speedL};
   std::vector<byte> returnData;
-  return SendReceiveCommand("Set", "Speed", data, &returnData);
+  return SendReceiveCommand("Set", "Moving Speed", data, &returnData);
 }
 
 int Dynamixel::setCWAngleLimit(int limit) 
@@ -146,22 +160,9 @@ int Dynamixel::setCCWAngleLimit(int limit)
 void MX28::Configure()
 {
   Dynamixel::Configure();
-  Addresses["Punch"] = 48;
-  Addresses["Moving"] = 46;
-  Addresses["Load"] = 40;
-  Addresses["Present Speed"] = 38;
-  Addresses["Position"] = 36;
-  Addresses["Torque Limit"] = 34;
-  Addresses["Moving Speed"] = 32;
-  Addresses["Goal"] = 30;
   Addresses["P Gain"] = 28;
   Addresses["I Gain"] = 27;
   Addresses["D Gain"] = 26;
-  Addresses["Max Torque"] = 14;
-  Addresses["CCWAngleLimit"] = 8;
-  Addresses["CWAngleLimit"] = 6;
-  Addresses["Baud Rate"] = 4;
-  Addresses["ID"] = 3;
 }
 
 float MX28::posToAngle(short pos)
@@ -205,23 +206,10 @@ int MX28::setDGain(byte dGain)
 void AX12::Configure()
 {
   Dynamixel::Configure();
-  Addresses["Punch"] = 48;
-  Addresses["Moving"] = 46;
-  Addresses["Load"] = 40;
-  Addresses["Present Speed"] = 38;
-  Addresses["Position"] = 36;
-  Addresses["Torque Limit"] = 34;
-  Addresses["Moving Speed"] = 32;
-  Addresses["Goal"] = 30;
   Addresses["CCWComplianceSlope"] = 29;
   Addresses["CWComplianceSlope"] = 28;
   Addresses["CCWComplianceMargin"] = 27;
   Addresses["CWComplianceMargin"] = 26;
-  Addresses["Max Torque"] = 14;
-  Addresses["CCWAngleLimit"] = 8;
-  Addresses["CWAngleLimit"] = 6;
-  Addresses["Baud Rate"] = 4;
-  Addresses["ID"] = 3;
 }
 
 float AX12::posToAngle(short pos)

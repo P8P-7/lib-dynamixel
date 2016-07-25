@@ -24,11 +24,11 @@ class Dynamixel {
 			 std::vector<byte> data,
 			 std::vector<byte>* outData);
 
+  int setID(byte id);
+  int setBaudRate(byte baudRate);
   int getPosition();
-  int setPosition(int position);
-  
-  int setSpeed(int speed);
-
+  int setGoalPosition(int goal);
+  int setMovingSpeed(int speed);
   int setCCWAngleLimit(int limit);
   int setCWAngleLimit(int limit);
 
@@ -36,7 +36,7 @@ class Dynamixel {
 
   byte _id;
   SerialPort* _port;
-  int _recvWaitTimeMS; //=50
+  int _recvWaitTimeMS;
 
   int FormatCommand(byte command, byte address, std::vector<byte>, byte* buffer);
 
