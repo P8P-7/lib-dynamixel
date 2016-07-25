@@ -83,7 +83,8 @@ int main(int argc, char** argv) {
 		    data,
 		    buffer);
 
-    Utils::PrintBuffer(buffer, length);
+    std::cout<< "buffer: " <<
+      Utils::PrintBuffer(buffer, length) << std::endl;
     // end for debugging
 
     int retVal;

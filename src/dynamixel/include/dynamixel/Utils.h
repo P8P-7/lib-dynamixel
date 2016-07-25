@@ -8,16 +8,19 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include <string>
 #include <unistd.h>
 
 class Utils {
  public:
-  static void PrintBuffer(byte data[], int length) {
-    printf("buffer:");
+  static std::string PrintBuffer(byte data[], int length) {
+    char *bytes = new char[length*3 + 1];
     for (int i=0; i<length; i++) {
-      printf(" %02X", data[i]);
+      sprintf(bytes,"%s%02X ", bytes, data[i]);
     }
-    printf("\n");
+    std::string str = bytes;
+    delete bytes;
+    return str;
   }
 
   static void ConvertToHL(short pos, byte *hexH, byte *hexL) {
