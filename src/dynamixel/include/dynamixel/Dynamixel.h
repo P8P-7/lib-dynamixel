@@ -45,7 +45,7 @@ class Dynamixel {
 
 };
 
-class AX12 : Dynamixel {
+class AX12 : public Dynamixel {
  public:
   void Configure();
 
@@ -59,7 +59,7 @@ class AX12 : Dynamixel {
   int setCWComplianceSlope(byte slope);
 };
 
-class MX28 : Dynamixel {
+class MX28 : public Dynamixel {
  public:
   void Configure();
 

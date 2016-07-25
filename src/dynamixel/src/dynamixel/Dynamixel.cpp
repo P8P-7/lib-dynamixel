@@ -28,15 +28,15 @@ void Dynamixel::Configure()
   Addresses["Punch"] = 48;
   Addresses["Moving"] = 46;
   Addresses["Load"] = 40;
-  Addresses["Present Speed"] = 38;
+  Addresses["PresentSpeed"] = 38;
   Addresses["Position"] = 36;
-  Addresses["Torque Limit"] = 34;
-  Addresses["Moving Speed"] = 32;
+  Addresses["TorqueLimit"] = 34;
+  Addresses["MovingSpeed"] = 32;
   Addresses["Goal"] = 30;
-  Addresses["Max Torque"] = 14;
+  Addresses["MaxTorque"] = 14;
   Addresses["CCWAngleLimit"] = 8;
   Addresses["CWAngleLimit"] = 6;
-  Addresses["Baud Rate"] = 4;
+  Addresses["BaudRate"] = 4;
   Addresses["ID"] = 3;
 }
 
@@ -133,7 +133,7 @@ int Dynamixel::setMovingSpeed(int speed)
   Utils::ConvertToHL(speed, &speedH, &speedL);
   std::vector<byte> data = {speedH, speedL};
   std::vector<byte> returnData;
-  return SendReceiveCommand("Set", "Moving Speed", data, &returnData);
+  return SendReceiveCommand("Set", "MovingSpeed", data, &returnData);
 }
 
 int Dynamixel::setCWAngleLimit(int limit) 
@@ -160,9 +160,9 @@ int Dynamixel::setCCWAngleLimit(int limit)
 void MX28::Configure()
 {
   Dynamixel::Configure();
-  Addresses["P Gain"] = 28;
-  Addresses["I Gain"] = 27;
-  Addresses["D Gain"] = 26;
+  Addresses["PGain"] = 28;
+  Addresses["IGain"] = 27;
+  Addresses["DGain"] = 26;
 }
 
 float MX28::posToAngle(short pos)
@@ -183,21 +183,21 @@ int MX28::setPGain(byte pGain)
 {
   std::vector<byte> data = {pGain};
   std::vector<byte> returnData;
-  return SendReceiveCommand("Set", "P Gain", data, &returnData);
+  return SendReceiveCommand("Set", "PGain", data, &returnData);
 }
 
 int MX28::setIGain(byte iGain)
 {
   std::vector<byte> data = {iGain};
   std::vector<byte> returnData;
-  return SendReceiveCommand("Set", "I Gain", data, &returnData);
+  return SendReceiveCommand("Set", "IGain", data, &returnData);
 }
 
 int MX28::setDGain(byte dGain)
 {
   std::vector<byte> data = {dGain};
   std::vector<byte> returnData;
-  return SendReceiveCommand("Set", "D Gain", data, &returnData);
+  return SendReceiveCommand("Set", "DGain", data, &returnData);
 }
 
 //
