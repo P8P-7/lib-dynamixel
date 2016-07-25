@@ -10,8 +10,6 @@ typedef unsigned char byte;
 #include "Utils.h"
 
 static const int BufferSize=1024;
-byte buffer[BufferSize];
-byte bufferIn[BufferSize];
 
 class Dynamixel {
  public:

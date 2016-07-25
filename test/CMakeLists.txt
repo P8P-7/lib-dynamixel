@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(dynamixel)
+project(dynamixel_test)
 
 ## Check C++11 / C++0x
 include(CheckCXXCompilerFlag)
@@ -13,10 +13,12 @@ else()
     message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-include_directories(include)
-add_library(dynamixel
-	    src/dynamixel/Dynamixel.cpp
-	    src/dynamixel/SerialPort.cpp)
+include_directories(../src/dynamixel/include)
 
+add_executable(test
+  main.cpp
+  ../src/dynamixel/src/dynamixel/Dynamixel.cpp
+  ../src/dynamixel/src/dynamixel/SerialPort.cpp)
 
-
+target_link_libraries(test
+  boost_system)
