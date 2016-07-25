@@ -204,7 +204,7 @@ int MX28::setDGain(byte dGain)
 //
 void AX12::Configure()
 {
-
+  Dynamixel::Configure();
   Addresses["Punch"] = 48;
   Addresses["Moving"] = 46;
   Addresses["Load"] = 40;
@@ -222,7 +222,6 @@ void AX12::Configure()
   Addresses["CWAngleLimit"] = 6;
   Addresses["Baud Rate"] = 4;
   Addresses["ID"] = 3;
-  Dynamixel::Configure();
 }
 
 float AX12::posToAngle(short pos)
