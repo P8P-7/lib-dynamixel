@@ -3,6 +3,7 @@
 #include "dynamixel/Dynamixel.h"
 
 int main(int argc, char** argv) {
+  bool serialFeedback = false;
   int motorId = 1;
   int numBytes = 1;
   int iData = 2;
@@ -24,6 +25,9 @@ int main(int argc, char** argv) {
   for (int i=1; i<argc; i++) {
     if (!strcmp(argv[i],"--baudRate")) {
       baudRate = atoi(argv[++i]);
+    }
+    else if (!strcmp(argv[i],"--serialFeedback")) {
+      serialFeedback = true;
     }
     else if (!strcmp(argv[i],"--motorId")) {
       motorId = atoi(argv[++i]);
@@ -80,6 +84,7 @@ int main(int argc, char** argv) {
     }
 
     motor->Configure();
+    motor->SetSerialFeedback(serialFeedback);
 
     // For debugging only:
     byte buffer[1024];
