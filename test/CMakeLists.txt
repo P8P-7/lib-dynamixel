@@ -15,10 +15,11 @@ endif()
 
 include_directories(../src/dynamixel/include)
 
-add_executable(test
+add_executable(dynamixel_test
   main.cpp
   ../src/dynamixel/src/dynamixel/Dynamixel.cpp
   ../src/dynamixel/src/dynamixel/SerialPort.cpp)
 
 target_link_libraries(test
+  pthread
   boost_system)
