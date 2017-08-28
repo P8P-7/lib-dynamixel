@@ -20,6 +20,6 @@ add_executable(dynamixel_test
   ../src/dynamixel/src/dynamixel/Dynamixel.cpp
   ../src/dynamixel/src/dynamixel/SerialPort.cpp)
 
-target_link_libraries(test
+target_link_libraries(dynamixel_test
   pthread
   boost_system)
