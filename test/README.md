@@ -1,4 +1,4 @@
-# Dynamixel Test program (without catkin / ROS)
+# Dynamixel Test program
 
 ## Dependencies
 
