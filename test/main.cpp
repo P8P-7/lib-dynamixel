@@ -5,12 +5,12 @@
 int main(int argc, char **argv) {
     bool serialFeedback = false;
     int motorId = 1;
-    int numBytes = 1;
-    int iData = 2;
-    std::string command = "Get";
-    std::string address = "Position";
+    int numBytes = 2;
+    int iData = 512;
+    std::string command = "Set";
+    std::string address = "Goal";
     std::string motorType = "AX12";
-    std::string portName = "/dev/ttyO5";
+    std::string portName = "/dev/ttyAMA0";
     int baudRate = 9600;
 
     // motor objects
