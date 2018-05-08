@@ -72,14 +72,14 @@ int main(int argc, char **argv) {
             return -1;
         }
 
-        motor->Configure();
-        motor->SetSerialFeedback(serialFeedback);
+        motor->configure();
+        motor->setSerialFeedback(serialFeedback);
 
         // For debugging only:
         byte buffer[1024];
         int length = motor->
-                FormatCommand(motor->GetCommand(command),
-                              motor->GetAddress(address),
+                formatCommand(motor->getCommand(command),
+                              motor->getAddress(address),
                               data,
                               buffer);
 
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
         // end for debugging
 
         int retVal;
-        retVal = motor->SendReceiveCommand(command,
+        retVal = motor->sendReceiveCommand(command,
                                            address,
                                            data,
                                            &recvData);
