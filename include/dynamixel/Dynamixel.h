@@ -17,20 +17,26 @@ public:
 
     Dynamixel(byte id, SerialPort *port);
 
-    void Configure();
+    void configure();
 
-    void SetSerialFeedback(bool fb);
+    void setDirectionCallback(std::function<void(std::string)> callback);
 
-    byte GetAddress(std::string address);
+    void setSerialFeedback(bool fb);
 
-    byte GetCommand(std::string command);
+    byte getAddress(std::string address);
 
-    int SendReceiveCommand(std::string command,
+    byte getCommand(std::string command);
+
+    int sendCommand();
+
+    int receiveCommand();
+
+    int sendReceiveCommand(std::string command,
                            std::string address,
                            std::vector<byte> data,
                            std::vector<byte> *outData);
 
-    int FormatCommand(byte command, byte address,
+    int formatCommand(byte command, byte address,
                       std::vector<byte>, byte *buffer);
 
     int setID(byte id);
@@ -54,6 +60,8 @@ private:
     int _recvWaitTimeMS;
     bool _serialFeedback;
 
+    std::function<void(std::string)> _callback;
+
 protected:
     std::map<std::string, byte> Addresses;
     std::map<std::string, byte> Commands;
@@ -65,7 +73,7 @@ public:
 
     AX12(byte id, SerialPort *port);
 
-    void Configure();
+    void configure();
 
     static float posToAngle(short pos);
 
@@ -86,7 +94,7 @@ public:
 
     MX28(byte id, SerialPort *port);
 
-    void Configure();
+    void configure();
 
     static float posToAngle(short pos);
 

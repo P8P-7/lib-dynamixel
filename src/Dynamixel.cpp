@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 #include "dynamixel/Dynamixel.h"
 #include "dynamixel/Utils.h"
@@ -17,11 +18,15 @@ Dynamixel::Dynamixel(byte id, SerialPort *port)
           _port(port) {
 }
 
-void Dynamixel::SetSerialFeedback(bool fb) {
+void Dynamixel::setDirectionCallback(std::function<void(std::string)> callback) {
+    _callback = std::move(callback);
+}
+
+void Dynamixel::setSerialFeedback(bool fb) {
     _serialFeedback = fb;
 }
 
-void Dynamixel::Configure() {
+void Dynamixel::configure() {
     Commands["Get"] = 2;
     Commands["Set"] = 3;
 
@@ -41,40 +46,52 @@ void Dynamixel::Configure() {
     Addresses["ID"] = 3;
 }
 
-byte Dynamixel::GetAddress(std::string address) {
+byte Dynamixel::getAddress(std::string address) {
     return Addresses[address];
 }
 
-byte Dynamixel::GetCommand(std::string command) {
+byte Dynamixel::getCommand(std::string command) {
     return Commands[command];
 }
 
-int Dynamixel::SendReceiveCommand(std::string command, std::string address,
+int Dynamixel::sendReceiveCommand(std::string command, std::string address,
                                   std::vector<byte> data,
                                   std::vector<byte> *outData) {
     byte sendBuf[BufferSize] = {0};
     byte recvBuf[BufferSize] = {0};
-    int retVal = 0;
     int responseLength = 6;
     if (command == "Get") {
         responseLength += data[0];
     }
-    int length = FormatCommand(Commands[command],
+    int length = formatCommand(Commands[command],
                                Addresses[address],
                                data,
                                sendBuf);
+
+    if (_callback) {
+        _callback("tx");
+    }
+
     // send
     long l = _port->sendArray(sendBuf, length);
+
+    if (_callback) {
+        _callback("rx");
+    }
+
     // sleep
     Utils::sleepMS(_recvWaitTimeMS);
+
     // recv 1
-    int recvLen;
     if (_serialFeedback) {
-        recvLen = _port->getArray(recvBuf, length); // receive once to get what we sent
+        _port->getArray(recvBuf, length); // receive once to get what we sent
         memset(recvBuf, 0, responseLength + 1);
     }
+
     // recv 2
+    int recvLen;
     recvLen = _port->getArray(recvBuf, responseLength); // receive again to get the real data
+
     // check data
     if (recvLen >= responseLength) {
         int numValues = responseLength - 6;
@@ -87,10 +104,10 @@ int Dynamixel::SendReceiveCommand(std::string command, std::string address,
     }
 }
 
-int Dynamixel::FormatCommand(byte command, byte address, std::vector<byte> values, byte *buffer) {
+int Dynamixel::formatCommand(byte command, byte address, std::vector<byte> values, byte *buffer) {
     byte numberOfParameters = 0;
 
-    //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 �PARAMETER N CHECK_SUM
+    //OXFF 0XFF ID LENGTH INSTRUCTION PARAMETER1 PARAMETER N CHECK_SUM
     buffer[0] = 0xff;
     buffer[1] = 0xff;
     buffer[2] = _id;
@@ -122,7 +139,7 @@ int Dynamixel::FormatCommand(byte command, byte address, std::vector<byte> value
 int Dynamixel::getPosition() {
     std::vector<byte> data = {2}; // number of bytes to read
     std::vector<byte> returnData;
-    SendReceiveCommand("Get", "Position", data, &returnData);
+    sendReceiveCommand("Get", "Position", data, &returnData);
     if (returnData.size() == 2) {
         return Utils::ConvertFromHL(returnData[0], returnData[1]);
     }
@@ -134,7 +151,7 @@ int Dynamixel::setGoalPosition(int goal) {
     Utils::ConvertToHL(goal, &posH, &posL);
     std::vector<byte> data = {posL, posH};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "Goal", data, &returnData);
+    return sendReceiveCommand("Set", "Goal", data, &returnData);
 }
 
 int Dynamixel::setMovingSpeed(int speed) {
@@ -142,7 +159,7 @@ int Dynamixel::setMovingSpeed(int speed) {
     Utils::ConvertToHL(speed, &speedH, &speedL);
     std::vector<byte> data = {speedL, speedH};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "MovingSpeed", data, &returnData);
+    return sendReceiveCommand("Set", "MovingSpeed", data, &returnData);
 }
 
 int Dynamixel::setCWAngleLimit(int limit) {
@@ -150,7 +167,7 @@ int Dynamixel::setCWAngleLimit(int limit) {
     Utils::ConvertToHL(limit, &limitH, &limitL);
     std::vector<byte> data = {limitL, limitH};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "CWAngleLimit", data, &returnData);
+    return sendReceiveCommand("Set", "CWAngleLimit", data, &returnData);
 }
 
 int Dynamixel::setCCWAngleLimit(int limit) {
@@ -158,7 +175,7 @@ int Dynamixel::setCCWAngleLimit(int limit) {
     Utils::ConvertToHL(limit, &limitH, &limitL);
     std::vector<byte> data = {limitL, limitH};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);
+    return sendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);
 }
 
 //
@@ -172,8 +189,8 @@ MX28::MX28(byte id, SerialPort *port)
         : Dynamixel(id, port) {
 }
 
-void MX28::Configure() {
-    Dynamixel::Configure();
+void MX28::configure() {
+    Dynamixel::configure();
     Addresses["PGain"] = 28;
     Addresses["IGain"] = 27;
     Addresses["DGain"] = 26;
@@ -194,19 +211,19 @@ short MX28::angleToPos(float angle) {
 int MX28::setPGain(byte pGain) {
     std::vector<byte> data = {pGain};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "PGain", data, &returnData);
+    return sendReceiveCommand("Set", "PGain", data, &returnData);
 }
 
 int MX28::setIGain(byte iGain) {
     std::vector<byte> data = {iGain};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "IGain", data, &returnData);
+    return sendReceiveCommand("Set", "IGain", data, &returnData);
 }
 
 int MX28::setDGain(byte dGain) {
     std::vector<byte> data = {dGain};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "DGain", data, &returnData);
+    return sendReceiveCommand("Set", "DGain", data, &returnData);
 }
 
 //
@@ -220,8 +237,8 @@ AX12::AX12(byte id, SerialPort *port)
         : Dynamixel(id, port) {
 }
 
-void AX12::Configure() {
-    Dynamixel::Configure();
+void AX12::configure() {
+    Dynamixel::configure();
     Addresses["CCWComplianceSlope"] = 29;
     Addresses["CWComplianceSlope"] = 28;
     Addresses["CCWComplianceMargin"] = 27;
@@ -243,23 +260,23 @@ short AX12::angleToPos(float angle) {
 int AX12::setCWComplianceMargin(byte margin) {
     std::vector<byte> data = {margin};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "CWComplianceMargin", data, &returnData);
+    return sendReceiveCommand("Set", "CWComplianceMargin", data, &returnData);
 }
 
 int AX12::setCCWComplianceMargin(byte margin) {
     std::vector<byte> data = {margin};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "CCWComplianceMargin", data, &returnData);
+    return sendReceiveCommand("Set", "CCWComplianceMargin", data, &returnData);
 }
 
 int AX12::setCWComplianceSlope(byte slope) {
     std::vector<byte> data = {slope};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "CWComplianceSlope", data, &returnData);
+    return sendReceiveCommand("Set", "CWComplianceSlope", data, &returnData);
 }
 
 int AX12::setCCWComplianceSlope(byte slope) {
     std::vector<byte> data = {slope};
     std::vector<byte> returnData;
-    return SendReceiveCommand("Set", "CCWComplianceSlope", data, &returnData);
+    return sendReceiveCommand("Set", "CCWComplianceSlope", data, &returnData);
 }
