@@ -1,13 +1,12 @@
-#ifndef DYNAMIXEL_H_
-#define DYNAMIXEL_H_
-
-typedef unsigned char byte;
+#pragma once
 
 #include <map>
 #include <vector>
 #include <cstring>
 #include "SerialPort.h"
 #include "Utils.h"
+
+typedef unsigned char byte;
 
 static const int BufferSize = 1024;
 
@@ -57,8 +56,6 @@ private:
 
     byte _id;
     SerialPort *_port;
-    int _recvWaitTimeMS;
-    bool _serialFeedback;
 
     std::function<void(std::string)> _callback;
 
@@ -106,5 +103,3 @@ public:
 
     int setDGain(byte dGain);
 };
-
-#endif

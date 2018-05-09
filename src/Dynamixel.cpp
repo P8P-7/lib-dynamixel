@@ -8,10 +8,7 @@
 //
 // Base Dynamixel Class
 //
-Dynamixel::Dynamixel()
-        : _recvWaitTimeMS(5),
-          _serialFeedback(false) {
-}
+Dynamixel::Dynamixel() = default;
 
 Dynamixel::Dynamixel(byte id, SerialPort *port)
         : _id(id),
@@ -20,10 +17,6 @@ Dynamixel::Dynamixel(byte id, SerialPort *port)
 
 void Dynamixel::setDirectionCallback(std::function<void(std::string)> callback) {
     _callback = std::move(callback);
-}
-
-void Dynamixel::setSerialFeedback(bool fb) {
-    _serialFeedback = fb;
 }
 
 void Dynamixel::configure() {
@@ -79,14 +72,7 @@ int Dynamixel::sendReceiveCommand(std::string command, std::string address,
         _callback("rx");
     }
 
-    // sleep
-    Utils::sleepMS(_recvWaitTimeMS);
-
-    // recv 1
-    if (_serialFeedback) {
-        _port->getArray(recvBuf, length); // receive once to get what we sent
-        memset(recvBuf, 0, responseLength + 1);
-    }
+    // recv 1 (omitted)
 
     // recv 2
     int recvLen;
@@ -130,7 +116,7 @@ int Dynamixel::formatCommand(byte command, byte address, std::vector<byte> value
     // bodyLength
     buffer[3] = (byte) (numberOfParameters + 3);
 
-    byte checksum = Utils::CheckSum(buffer, 6 + numberOfParameters);
+    byte checksum = Utils::checkSum(buffer, 6 + numberOfParameters);
     buffer[6 + numberOfParameters] = checksum;
 
     return 7 + numberOfParameters;
@@ -141,14 +127,14 @@ int Dynamixel::getPosition() {
     std::vector<byte> returnData;
     sendReceiveCommand("Get", "Position", data, &returnData);
     if (returnData.size() == 2) {
-        return Utils::ConvertFromHL(returnData[0], returnData[1]);
+        return Utils::convertFromHL(returnData[0], returnData[1]);
     }
     return -1;
 }
 
 int Dynamixel::setGoalPosition(int goal) {
     byte posH, posL;
-    Utils::ConvertToHL(goal, &posH, &posL);
+    Utils::convertToHL(goal, &posH, &posL);
     std::vector<byte> data = {posL, posH};
     std::vector<byte> returnData;
     return sendReceiveCommand("Set", "Goal", data, &returnData);
@@ -156,7 +142,7 @@ int Dynamixel::setGoalPosition(int goal) {
 
 int Dynamixel::setMovingSpeed(int speed) {
     byte speedH, speedL;
-    Utils::ConvertToHL(speed, &speedH, &speedL);
+    Utils::convertToHL(speed, &speedH, &speedL);
     std::vector<byte> data = {speedL, speedH};
     std::vector<byte> returnData;
     return sendReceiveCommand("Set", "MovingSpeed", data, &returnData);
@@ -164,7 +150,7 @@ int Dynamixel::setMovingSpeed(int speed) {
 
 int Dynamixel::setCWAngleLimit(int limit) {
     byte limitH, limitL;
-    Utils::ConvertToHL(limit, &limitH, &limitL);
+    Utils::convertToHL(limit, &limitH, &limitL);
     std::vector<byte> data = {limitL, limitH};
     std::vector<byte> returnData;
     return sendReceiveCommand("Set", "CWAngleLimit", data, &returnData);
@@ -172,7 +158,7 @@ int Dynamixel::setCWAngleLimit(int limit) {
 
 int Dynamixel::setCCWAngleLimit(int limit) {
     byte limitH, limitL;
-    Utils::ConvertToHL(limit, &limitH, &limitL);
+    Utils::convertToHL(limit, &limitH, &limitL);
     std::vector<byte> data = {limitL, limitH};
     std::vector<byte> returnData;
     return sendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);

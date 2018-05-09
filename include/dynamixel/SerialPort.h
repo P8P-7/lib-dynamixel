@@ -1,5 +1,4 @@
-#ifndef SERIALPORT_H_
-#define SERIALPORT_H_
+#pragma once
 
 #include <cstdio>
 #include <termios.h>
@@ -37,6 +36,3 @@ public:
 
     int getArray(unsigned char *buffer, int len);
 };
-
-
-#endif /* SERIALPORT_H_ */

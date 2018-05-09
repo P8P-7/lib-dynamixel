@@ -29,7 +29,7 @@ void SerialPort::time_out(const boost::system::error_code& error) {
 }
 */
 int SerialPort::connect() {
-    port->open("/dev/ttyO5");
+    port->open("/dev/serial0");
     port->set_option(boost::asio::serial_port_base::baud_rate(9600));
     return 1;
 }

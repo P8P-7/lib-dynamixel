@@ -3,15 +3,14 @@
 #include "dynamixel/Dynamixel.h"
 
 int main(int argc, char **argv) {
-    bool serialFeedback = false;
     int motorId = 1;
     int numBytes = 2;
     int iData = 512;
     std::string command = "Set";
     std::string address = "Goal";
     std::string motorType = "AX12";
-    std::string portName = "/dev/ttyAMA0";
-    int baudRate = 9600;
+    std::string portName = "/dev/serial0";
+    int baudRate = 1000000;
 
     // motor objects
     Dynamixel *motor;
@@ -25,8 +24,6 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--baudRate")) {
             baudRate = atoi(argv[++i]);
-        } else if (!strcmp(argv[i], "--serialFeedback")) {
-            serialFeedback = true;
         } else if (!strcmp(argv[i], "--motorId")) {
             motorId = atoi(argv[++i]);
         } else if (!strcmp(argv[i], "--numBytes")) {
@@ -48,7 +45,7 @@ int main(int argc, char **argv) {
         data.push_back(iData);
     } else if (numBytes == 2) {
         byte h, l;
-        Utils::ConvertToHL(iData, &h, &l);
+        Utils::convertToHL(iData, &h, &l);
         data.push_back(l);
         data.push_back(h);
     }
@@ -73,7 +70,6 @@ int main(int argc, char **argv) {
         }
 
         motor->configure();
-        motor->setSerialFeedback(serialFeedback);
 
         // For debugging only:
         byte buffer[1024];
@@ -84,7 +80,7 @@ int main(int argc, char **argv) {
                               buffer);
 
         std::cout << "buffer: " <<
-                  Utils::PrintBuffer(buffer, length) << std::endl;
+                  Utils::printBuffer(buffer, length) << std::endl;
         // end for debugging
 
         int retVal;
@@ -97,8 +93,9 @@ int main(int argc, char **argv) {
         if (recvData.size() == 1) {
             recvVal = recvData[0];
         } else if (recvData.size() == 2) {
-            recvVal = Utils::ConvertFromHL(recvData[0], recvData[1]);
+            recvVal = Utils::convertFromHL(recvData[0], recvData[1]);
         }
+
         std::cout << "received: " <<
                   retVal << " : " << recvVal << std::endl;
 
