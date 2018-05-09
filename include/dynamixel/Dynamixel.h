@@ -31,13 +31,10 @@ public:
 
     int receiveCommand();
 
-    int sendReceiveCommand(std::string command,
-                           std::string address,
-                           std::vector<byte> data,
-                           std::vector<byte> *outData);
+    int
+    sendReceiveCommand(std::string command, std::string address, std::vector<byte> data, std::vector<byte> *outData);
 
-    int formatCommand(byte command, byte address,
-                      std::vector<byte>, byte *buffer);
+    int formatCommand(byte command, byte address, std::vector<byte>, byte *buffer);
 
     int setID(byte id);
 
@@ -52,6 +49,8 @@ public:
     int setCCWAngleLimit(int limit);
 
     int setCWAngleLimit(int limit);
+
+    int setWheelMode();
 
 private:
 

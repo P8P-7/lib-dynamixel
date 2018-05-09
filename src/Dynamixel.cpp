@@ -2,7 +2,6 @@
 #include <cstring>
 
 #include "dynamixel/Dynamixel.h"
-#include "dynamixel/Utils.h"
 
 //
 // Base Dynamixel Class
@@ -22,20 +21,56 @@ void Dynamixel::configure() {
     Commands["Get"] = 2;
     Commands["Set"] = 3;
 
-    Addresses["Punch"] = 48;
-    Addresses["Moving"] = 46;
-    Addresses["PresentTemperature"] = 43;
-    Addresses["Load"] = 40;
-    Addresses["PresentSpeed"] = 38;
-    Addresses["Position"] = 36;
-    Addresses["TorqueLimit"] = 34;
-    Addresses["MovingSpeed"] = 32;
-    Addresses["Goal"] = 30;
-    Addresses["MaxTorque"] = 14;
-    Addresses["CCWAngleLimit"] = 8;
-    Addresses["CWAngleLimit"] = 6;
-    Addresses["BaudRate"] = 4;
+    Addresses["ModelNumber"] = 0;
+    Addresses["ModelNumberH"] = 1;
+    Addresses["Version"] = 2;
     Addresses["ID"] = 3;
+    Addresses["BaudRate"] = 4;
+    Addresses["ReturnDelayTime"] = 5;
+    Addresses["CWAngleLimit"] = 6;
+    Addresses["CWAngleLimitH"] = 7;
+    Addresses["CCWAngleLimit"] = 8;
+    Addresses["CCWAngleLimitH"] = 9;
+    Addresses["SystemData2"] = 10;
+    Addresses["LimitTemp"] = 11;
+    Addresses["DownLimitVoltage"] = 12;
+    Addresses["UpLimitVoltage"] = 13;
+    Addresses["MaxTorque"] = 14;
+    Addresses["MaxTorqueH"] = 15;
+    Addresses["ReturnLevel"] = 16;
+    Addresses["AlarmLED"] = 17;
+    Addresses["AlarmShutdown"] = 18;
+    Addresses["OperatingMode"] = 19;
+    Addresses["DownCalibration"] = 20;
+    Addresses["DownCalibrationH"] = 21;
+    Addresses["UpCalibration"] = 22;
+    Addresses["UpCalibrationH"] = 23;
+    Addresses["TorqueStatus"] = 24;
+    Addresses["LEDStatus"] = 25;
+    Addresses["CWCompMargin"] = 26;
+    Addresses["CCWCompMargin"] = 27;
+    Addresses["CWCompSlope"] = 28;
+    Addresses["CCWCompSlope"] = 29;
+    Addresses["Goal"] = 30;
+    Addresses["GoalH"] = 31;
+    Addresses["MovingSpeed"] = 32;
+    Addresses["MovingSpeedH"] = 33;
+    Addresses["TorqueLimit"] = 34;
+    Addresses["TorqueLimitH"] = 35;
+    Addresses["Position"] = 36;
+    Addresses["PositionH"] = 37;
+    Addresses["PresentSpeed"] = 38;
+    Addresses["PresentSpeedH"] = 39;
+    Addresses["Load"] = 40;
+    Addresses["LoadH"] = 41;
+    Addresses["Voltage"] = 42;
+    Addresses["PresentTemperature"] = 43;
+    Addresses["RegisteredInstruction"] = 44;
+    Addresses["PauseTime"] = 45;
+    Addresses["Moving"] = 46;
+    Addresses["Lock"] = 47;
+    Addresses["Punch"] = 48;
+    Addresses["PunchH"] = 49;
 }
 
 byte Dynamixel::getAddress(std::string address) {
@@ -55,10 +90,7 @@ int Dynamixel::sendReceiveCommand(std::string command, std::string address,
     if (command == "Get") {
         responseLength += data[0];
     }
-    int length = formatCommand(Commands[command],
-                               Addresses[address],
-                               data,
-                               sendBuf);
+    int length = formatCommand(Commands[command], Addresses[address], data, sendBuf);
 
     if (_callback) {
         _callback("tx");
@@ -163,52 +195,9 @@ int Dynamixel::setCCWAngleLimit(int limit) {
     return sendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);
 }
 
-//
-// MX28
-//
-MX28::MX28()
-        : Dynamixel() {
-}
-
-MX28::MX28(byte id, SerialPort *port)
-        : Dynamixel(id, port) {
-}
-
-void MX28::configure() {
-    Dynamixel::configure();
-    Addresses["PGain"] = 28;
-    Addresses["IGain"] = 27;
-    Addresses["DGain"] = 26;
-}
-
-float MX28::posToAngle(short pos) {
-    float angle = 0;
-    angle = (float) pos * 0.088f;
-    return angle;
-}
-
-short MX28::angleToPos(float angle) {
-    short pos = 0;
-    pos = (short) (angle / 0.088f);
-    return pos;
-}
-
-int MX28::setPGain(byte pGain) {
-    std::vector<byte> data = {pGain};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Set", "PGain", data, &returnData);
-}
-
-int MX28::setIGain(byte iGain) {
-    std::vector<byte> data = {iGain};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Set", "IGain", data, &returnData);
-}
-
-int MX28::setDGain(byte dGain) {
-    std::vector<byte> data = {dGain};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Set", "DGain", data, &returnData);
+int Dynamixel::setWheelMode() {
+    setCWAngleLimit(0);
+    setCCWAngleLimit(0);
 }
 
 //
