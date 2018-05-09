@@ -1,9 +1,6 @@
 #pragma once
 
 #include <cstdio>
-#include <termios.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio.hpp>

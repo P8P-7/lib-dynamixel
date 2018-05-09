@@ -1,6 +1,5 @@
 #include <cstdio>
 #include <cstring>
-#include <utility>
 
 #include "dynamixel/Dynamixel.h"
 #include "dynamixel/Utils.h"

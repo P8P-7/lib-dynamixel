@@ -1,12 +1,13 @@
 #pragma once
 
+typedef unsigned char byte;
+
 #include <map>
 #include <vector>
 #include <cstring>
+
 #include "SerialPort.h"
 #include "Utils.h"
-
-typedef unsigned char byte;
 
 static const int BufferSize = 1024;
 
