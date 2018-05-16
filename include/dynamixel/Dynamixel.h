@@ -34,6 +34,10 @@ public:
     int
     sendReceiveCommand(std::string command, std::string address, std::vector<byte> data, std::vector<byte> *outData);
 
+    void turn(int speed, std::string direction);
+
+    void turn(int speed, bool direction);
+
     int formatCommand(byte command, byte address, std::vector<byte>, byte *buffer);
 
     int setID(byte id);
@@ -46,11 +50,21 @@ public:
 
     int setMovingSpeed(int speed);
 
+    int getCCWAngleLimit();
+
     int setCCWAngleLimit(int limit);
+
+    int getCWAngleLimit();
 
     int setCWAngleLimit(int limit);
 
-    int setWheelMode();
+    int getCurrentLoad();
+
+    void init(bool direction);
+
+    int setWheelMode(bool wheels);
+
+    std::string getCurrentMode();
 
 private:
 
@@ -83,23 +97,4 @@ public:
     int setCCWComplianceSlope(byte slope);
 
     int setCWComplianceSlope(byte slope);
-};
-
-class MX28 : public Dynamixel {
-public:
-    MX28();
-
-    MX28(byte id, SerialPort *port);
-
-    void configure();
-
-    static float posToAngle(short pos);
-
-    static short angleToPos(float angle);
-
-    int setPGain(byte pGain);
-
-    int setIGain(byte iGain);
-
-    int setDGain(byte dGain);
 };

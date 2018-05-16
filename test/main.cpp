@@ -5,7 +5,7 @@
 int main(int argc, char **argv) {
     int motorId = 1;
     int numBytes = 2;
-    int iData = 512;
+    int iData = 0;
     std::string command = "Set";
     std::string address = "Goal";
     std::string motorType = "AX12";
@@ -15,31 +15,10 @@ int main(int argc, char **argv) {
     // motor objects
     Dynamixel *motor;
     AX12 ax12;
-    MX28 mx28;
 
     std::vector<byte> data;
     std::vector<byte> recvData;
 
-    // parse command line args
-    for (int i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "--baudRate")) {
-            baudRate = atoi(argv[++i]);
-        } else if (!strcmp(argv[i], "--motorId")) {
-            motorId = atoi(argv[++i]);
-        } else if (!strcmp(argv[i], "--numBytes")) {
-            numBytes = atoi(argv[++i]);
-        } else if (!strcmp(argv[i], "--command")) {
-            command = argv[++i];
-        } else if (!strcmp(argv[i], "--address")) {
-            address = argv[++i];
-        } else if (!strcmp(argv[i], "--portName")) {
-            portName = argv[++i];
-        } else if (!strcmp(argv[i], "--motorType")) {
-            motorType = argv[++i];
-        } else if (!strcmp(argv[i], "--data")) {
-            iData = std::strtoul(argv[++i], 0, 10);
-        }
-    }
 
     if (numBytes == 1) {
         data.push_back(iData);
@@ -57,27 +36,15 @@ int main(int argc, char **argv) {
 
         std::cout << "Success\n";
 
-        // configure the motor objects
-        if (motorType == "AX12") {
-            ax12 = AX12(motorId, &port);
-            motor = new AX12(motorId, &port);
-        } else if (motorType == "MX28") {
-            mx28 = MX28(motorId, &port);
-            motor = new MX28(motorId, &port);
-        } else {
-            std::cout << "Error: motor type not supported!\n";
-            return -1;
-        }
 
+        ax12 = AX12(motorId, &port);
+        motor = new AX12(motorId, &port);
         motor->configure();
 
         // For debugging only:
+        motor->setWheelMode(true);
         byte buffer[1024];
-        int length = motor->
-                formatCommand(motor->getCommand(command),
-                              motor->getAddress(address),
-                              data,
-                              buffer);
+        int length = motor->turn(data, true);
 
         std::cout << "buffer: " <<
                   Utils::printBuffer(buffer, length) << std::endl;

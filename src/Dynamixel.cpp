@@ -10,8 +10,7 @@ Dynamixel::Dynamixel() = default;
 
 Dynamixel::Dynamixel(byte id, SerialPort *port)
         : _id(id),
-          _port(port) {
-}
+          _port(port) {}
 
 void Dynamixel::setDirectionCallback(std::function<void(std::string)> callback) {
     _callback = std::move(callback);
@@ -179,12 +178,26 @@ int Dynamixel::setMovingSpeed(int speed) {
     return sendReceiveCommand("Set", "MovingSpeed", data, &returnData);
 }
 
+int Dynamixel::getCWAngleLimit() {
+    byte limitH, limitL;
+    std::vector<byte> data = {limitL, limitH};
+    std::vector<byte> returnData;
+    return sendReceiveCommand("Get", "CWAngleLimit", data, &returnData);
+}
+
 int Dynamixel::setCWAngleLimit(int limit) {
     byte limitH, limitL;
     Utils::convertToHL(limit, &limitH, &limitL);
     std::vector<byte> data = {limitL, limitH};
     std::vector<byte> returnData;
     return sendReceiveCommand("Set", "CWAngleLimit", data, &returnData);
+}
+
+int Dynamixel::getCCWAngleLimit() {
+    byte limitH, limitL;
+    std::vector<byte> data = {limitL, limitH};
+    std::vector<byte> returnData;
+    return sendReceiveCommand("Get", "CCWAngleLimit", data, &returnData);
 }
 
 int Dynamixel::setCCWAngleLimit(int limit) {
@@ -195,10 +208,65 @@ int Dynamixel::setCCWAngleLimit(int limit) {
     return sendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);
 }
 
-int Dynamixel::setWheelMode() {
-    setCWAngleLimit(0);
-    setCCWAngleLimit(0);
+int Dynamixel::setWheelMode(bool wheels) {
+    if (wheels) {
+        setCWAngleLimit(0);
+        setCCWAngleLimit(0);
+    } else {
+        setCWAngleLimit(255);
+        setCCWAngleLimit(255);
+    }
 }
+
+std::string Dynamixel::getCurrentMode() {
+    int cw = getCWAngleLimit();
+    int ccw = getCCWAngleLimit();
+    if (cw == 0 && ccw == 0) {
+        return "wheel";
+    } else if (cw != ccw && (cw == 0 xor ccw == 0)) {
+        return "limited wheel";
+    } else {
+        return "joint";
+    }
+}
+
+void Dynamixel::turn(int speed, std::string direction) {
+    if (direction == "left") {
+        setMovingSpeed(speed);
+    } else if (direction == "right") {
+        setMovingSpeed(speed + 1024);
+    } else {
+        throw "Not a correct direction";
+    }
+}
+
+void Dynamixel::turn(int speed, bool direction) {
+    turn(speed, (std::string) (direction ? "left" : "right"));
+}
+
+int Dynamixel::getCurrentLoad() {
+    byte limitH, limitL;
+    std::vector<byte> data = {limitL, limitH};
+    std::vector<byte> returnData;
+    return sendReceiveCommand("Get", "Load", data, &returnData);
+}
+
+void Dynamixel::init(bool direction) {
+    turn(100, (std::string) (direction ? "left" : "right"));
+    usleep(50);
+    int currentLoad = getCurrentLoad();
+    int loadThreshHold = 50;
+    if (loadThreshHold >= currentLoad) {
+        while (loadThreshHold >= currentLoad) {
+            usleep(100);
+        }
+    }
+    while (loadThreshHold <= currentLoad) {
+        usleep(50);
+    }
+    setMovingSpeed(0);
+}
+
 
 //
 // AX12
