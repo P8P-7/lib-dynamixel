@@ -3,16 +3,11 @@
 
 #include "dynamixel/Dynamixel.h"
 
-//
-// Base Dynamixel Class
-//
-Dynamixel::Dynamixel() = default;
-
 Dynamixel::Dynamixel(byte id, SerialPort *port)
         : _id(id),
           _port(port) {}
 
-void Dynamixel::setDirectionCallback(std::function<void(std::string)> callback) {
+void Dynamixel::setDirectionCallback(std::function<void(bool)> callback) {
     _callback = std::move(callback);
 }
 
@@ -46,10 +41,10 @@ void Dynamixel::configure() {
     Addresses["UpCalibrationH"] = 23;
     Addresses["TorqueStatus"] = 24;
     Addresses["LEDStatus"] = 25;
-    Addresses["CWCompMargin"] = 26;
-    Addresses["CCWCompMargin"] = 27;
-    Addresses["CWCompSlope"] = 28;
-    Addresses["CCWCompSlope"] = 29;
+    Addresses["CWComplianceMargin"] = 26;
+    Addresses["CCWComplianceMargin"] = 27;
+    Addresses["CWComplianceSlope"] = 28;
+    Addresses["CCWComplianceSlope"] = 29;
     Addresses["Goal"] = 30;
     Addresses["GoalH"] = 31;
     Addresses["MovingSpeed"] = 32;
@@ -92,14 +87,14 @@ int Dynamixel::sendReceiveCommand(std::string command, std::string address,
     int length = formatCommand(Commands[command], Addresses[address], data, sendBuf);
 
     if (_callback) {
-        _callback("tx");
+        _callback(true);
     }
 
     // send
     long l = _port->sendArray(sendBuf, length);
 
     if (_callback) {
-        _callback("rx");
+        _callback(false);
     }
 
     // recv 1 (omitted)
@@ -162,6 +157,13 @@ int Dynamixel::getPosition() {
     return -1;
 }
 
+int Dynamixel::getCurrentLoad() {
+    byte limitH, limitL;
+    std::vector<byte> data = {limitL, limitH};
+    std::vector<byte> returnData;
+    return sendReceiveCommand("Get", "Load", data, &returnData);
+}
+
 int Dynamixel::setGoalPosition(int goal) {
     byte posH, posL;
     Utils::convertToHL(goal, &posH, &posL);
@@ -206,119 +208,4 @@ int Dynamixel::setCCWAngleLimit(int limit) {
     std::vector<byte> data = {limitL, limitH};
     std::vector<byte> returnData;
     return sendReceiveCommand("Set", "CCWAngleLimit", data, &returnData);
-}
-
-int Dynamixel::setWheelMode(bool wheels) {
-    if (wheels) {
-        setCWAngleLimit(0);
-        setCCWAngleLimit(0);
-    } else {
-        setCWAngleLimit(255);
-        setCCWAngleLimit(255);
-    }
-}
-
-std::string Dynamixel::getCurrentMode() {
-    int cw = getCWAngleLimit();
-    int ccw = getCCWAngleLimit();
-    if (cw == 0 && ccw == 0) {
-        return "wheel";
-    } else if (cw != ccw && (cw == 0 xor ccw == 0)) {
-        return "limited wheel";
-    } else {
-        return "joint";
-    }
-}
-
-void Dynamixel::turn(int speed, std::string direction) {
-    if (direction == "left") {
-        setMovingSpeed(speed);
-    } else if (direction == "right") {
-        setMovingSpeed(speed + 1024);
-    } else {
-        throw "Not a correct direction";
-    }
-}
-
-void Dynamixel::turn(int speed, bool direction) {
-    turn(speed, (std::string) (direction ? "left" : "right"));
-}
-
-int Dynamixel::getCurrentLoad() {
-    byte limitH, limitL;
-    std::vector<byte> data = {limitL, limitH};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Get", "Load", data, &returnData);
-}
-
-void Dynamixel::init(bool direction) {
-    turn(100, (std::string) (direction ? "left" : "right"));
-    usleep(50);
-    int currentLoad = getCurrentLoad();
-    int loadThreshHold = 50;
-    if (loadThreshHold >= currentLoad) {
-        while (loadThreshHold >= currentLoad) {
-            usleep(100);
-        }
-    }
-    while (loadThreshHold <= currentLoad) {
-        usleep(50);
-    }
-    setMovingSpeed(0);
-}
-
-
-//
-// AX12
-//
-AX12::AX12()
-        : Dynamixel() {
-}
-
-AX12::AX12(byte id, SerialPort *port)
-        : Dynamixel(id, port) {
-}
-
-void AX12::configure() {
-    Dynamixel::configure();
-    Addresses["CCWComplianceSlope"] = 29;
-    Addresses["CWComplianceSlope"] = 28;
-    Addresses["CCWComplianceMargin"] = 27;
-    Addresses["CWComplianceMargin"] = 26;
-}
-
-float AX12::posToAngle(short pos) {
-    float angle = 0;
-    angle = (float) pos * 0.29f;
-    return angle;
-}
-
-short AX12::angleToPos(float angle) {
-    short pos = 0;
-    pos = (short) (angle / 0.29f);
-    return pos;
-}
-
-int AX12::setCWComplianceMargin(byte margin) {
-    std::vector<byte> data = {margin};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Set", "CWComplianceMargin", data, &returnData);
-}
-
-int AX12::setCCWComplianceMargin(byte margin) {
-    std::vector<byte> data = {margin};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Set", "CCWComplianceMargin", data, &returnData);
-}
-
-int AX12::setCWComplianceSlope(byte slope) {
-    std::vector<byte> data = {slope};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Set", "CWComplianceSlope", data, &returnData);
-}
-
-int AX12::setCCWComplianceSlope(byte slope) {
-    std::vector<byte> data = {slope};
-    std::vector<byte> returnData;
-    return sendReceiveCommand("Set", "CCWComplianceSlope", data, &returnData);
 }

@@ -19,7 +19,7 @@ public:
 
     void configure();
 
-    void setDirectionCallback(std::function<void(std::string)> callback);
+    void setDirectionCallback(std::function<void(bool)> callback);
 
     void setSerialFeedback(bool fb);
 
@@ -46,6 +46,8 @@ public:
 
     int getPosition();
 
+    int getCurrentLoad();
+
     int setGoalPosition(int goal);
 
     int setMovingSpeed(int speed);
@@ -58,43 +60,12 @@ public:
 
     int setCWAngleLimit(int limit);
 
-    int getCurrentLoad();
-
-    void init(bool direction);
-
-    int setWheelMode(bool wheels);
-
-    std::string getCurrentMode();
-
 private:
-
     byte _id;
     SerialPort *_port;
 
-    std::function<void(std::string)> _callback;
-
+    std::function<void(bool)> _callback;
 protected:
     std::map<std::string, byte> Addresses;
     std::map<std::string, byte> Commands;
-};
-
-class AX12 : public Dynamixel {
-public:
-    AX12();
-
-    AX12(byte id, SerialPort *port);
-
-    void configure();
-
-    static float posToAngle(short pos);
-
-    static short angleToPos(float angle);
-
-    int setCCWComplianceMargin(byte margin);
-
-    int setCWComplianceMargin(byte margin);
-
-    int setCCWComplianceSlope(byte slope);
-
-    int setCWComplianceSlope(byte slope);
 };

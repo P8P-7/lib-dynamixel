@@ -7,18 +7,10 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/bind.hpp>
 
-const int blockTimeMS = 10;
-
 class SerialPort {
 private:
     boost::asio::io_service io;
     boost::asio::serial_port *port;
-    //size_t timeout;
-    // boost::asio::deadline_timer timer;
-    //bool read_error;
-    //  void read_complete(const boost::system::error_code& error,
-    //		     size_t bytes_transferred);
-    //  void time_out(const boost::system::error_code& error);
 
 public:
     SerialPort();
