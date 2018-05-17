@@ -5,7 +5,9 @@
 
 Dynamixel::Dynamixel(byte id, SerialPort *port)
         : _id(id),
-          _port(port) {}
+          _port(port) {
+    configure();
+}
 
 void Dynamixel::setDirectionCallback(std::function<void(bool)> callback) {
     _callback = std::move(callback);
