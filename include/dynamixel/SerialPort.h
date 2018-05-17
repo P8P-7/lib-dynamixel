@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdio>
+#include <string>
 
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio.hpp>
@@ -17,7 +18,7 @@ public:
 
     int connect();
 
-    int connect(char *device, int baud);
+    int connect(std::string &device, unsigned int baud);
 
     void disconnect(void);
 
