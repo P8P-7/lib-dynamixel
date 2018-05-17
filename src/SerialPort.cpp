@@ -14,8 +14,13 @@ int SerialPort::connect() {
 }
 
 int SerialPort::connect(std::string &device, unsigned int baud) {
-    port->open(device);
-    port->set_option(boost::asio::serial_port_base::baud_rate(baud));
+    try {
+        port->open(device);
+        port->set_option(boost::asio::serial_port_base::baud_rate(baud));
+    } catch (const boost::system::system_error& e) {
+        return 0;
+    }
+
     return 1;
 }
 
