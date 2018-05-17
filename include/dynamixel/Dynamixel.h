@@ -21,28 +21,14 @@ public:
 
     void setDirectionCallback(std::function<void(bool)> callback);
 
-    void setSerialFeedback(bool fb);
-
     byte getAddress(std::string address);
 
     byte getCommand(std::string command);
 
-    int sendCommand();
-
-    int receiveCommand();
-
     int
     sendReceiveCommand(std::string command, std::string address, std::vector<byte> data, std::vector<byte> *outData);
 
-    void turn(int speed, std::string direction);
-
-    void turn(int speed, bool direction);
-
     int formatCommand(byte command, byte address, std::vector<byte>, byte *buffer);
-
-    int setID(byte id);
-
-    int setBaudRate(byte baudRate);
 
     int getPosition();
 
