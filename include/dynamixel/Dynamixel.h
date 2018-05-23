@@ -15,36 +15,23 @@ class Dynamixel {
 public:
     Dynamixel();
 
-    Dynamixel(byte id, SerialPort *port);
+    Dynamixel(byte id, SerialPort &port);
 
     void configure();
 
-    void setDirectionCallback(std::function<void(std::string)> callback);
+    void setDirectionCallback(std::function<void(bool)> callback);
 
-    void setSerialFeedback(bool fb);
+    byte getAddress(const std::string &address);
 
-    byte getAddress(std::string address);
+    byte getCommand(const std::string &command);
 
-    byte getCommand(std::string command);
-
-    int sendCommand();
-
-    int receiveCommand();
-
-    int
-    sendReceiveCommand(std::string command, std::string address, std::vector<byte> data, std::vector<byte> *outData);
-
-    void turn(int speed, std::string direction);
-
-    void turn(int speed, bool direction);
+    int sendReceiveCommand(const std::string &command, const std::string &address, std::vector<byte> data, std::vector<byte> *outData);
 
     int formatCommand(byte command, byte address, std::vector<byte>, byte *buffer);
 
-    int setID(byte id);
-
-    int setBaudRate(byte baudRate);
-
     int getPosition();
+
+    int getCurrentLoad();
 
     int setGoalPosition(int goal);
 
@@ -58,43 +45,12 @@ public:
 
     int setCWAngleLimit(int limit);
 
-    int getCurrentLoad();
-
-    void init(bool direction);
-
-    int setWheelMode(bool wheels);
-
-    std::string getCurrentMode();
-
 private:
-
     byte _id;
-    SerialPort *_port;
+    SerialPort &_port;
 
-    std::function<void(std::string)> _callback;
+    std::function<void(bool)> _callback;
 
-protected:
     std::map<std::string, byte> Addresses;
     std::map<std::string, byte> Commands;
-};
-
-class AX12 : public Dynamixel {
-public:
-    AX12();
-
-    AX12(byte id, SerialPort *port);
-
-    void configure();
-
-    static float posToAngle(short pos);
-
-    static short angleToPos(float angle);
-
-    int setCCWComplianceMargin(byte margin);
-
-    int setCWComplianceMargin(byte margin);
-
-    int setCCWComplianceSlope(byte slope);
-
-    int setCWComplianceSlope(byte slope);
 };
