@@ -1,14 +1,11 @@
 #pragma once
 
-#include <cstring>
-
 class Utils {
 public:
     static std::string printBuffer(byte data[], int length) {
-        char bytes[length * 3 + 1];
-        memset(bytes, 0, length * 3 + 1);
+        char bytes[length * 3 + 1] = {0};
         for (int i = 0; i < length; i++) {
-            sprintf(bytes, "%s%02X ", bytes, data[i]);
+            snprintf(bytes, sizeof(bytes) - 3 * (i), "%02X ", data[i]);
         }
         std::string str = bytes;
         return str;
