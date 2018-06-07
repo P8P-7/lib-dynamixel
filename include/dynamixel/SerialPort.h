@@ -1,18 +1,9 @@
 #pragma once
 
-#include <cstdio>
-#include <string>
-
-#include <boost/asio/serial_port.hpp>
+#include <boost/thread.hpp>
 #include <boost/asio.hpp>
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/bind.hpp>
 
 class SerialPort {
-private:
-    boost::asio::io_service io;
-    boost::asio::serial_port *port;
-
 public:
     SerialPort();
 
@@ -22,7 +13,34 @@ public:
 
     void disconnect(void);
 
-    int sendArray(unsigned char *buffer, int len);
+    /**
+     * Set the timeout on read operations.
+     */
+    void setTimeout(const boost::posix_time::time_duration &t);
 
-    int getArray(unsigned char *buffer, int len);
+    /**
+     * Write the supplied data to a serial device.
+     * \param data to be sent through the serial device
+     * \return the number of characters transferred.
+     * \throws boost::system::system_error if any error
+     */
+    size_t write(const std::vector<unsigned char> &data);
+
+    /**
+     * Read a certain amount of data from the serial device
+     * \param size how much data to read
+     * \return the receive buffer. It's empty if no data is available.
+     * \throws boost::system::system_error if any error
+     */
+    std::vector<unsigned char> read(size_t size);
+
+private:
+    boost::asio::io_service io;
+    boost::asio::serial_port *port;
+
+    boost::posix_time::time_duration timeout;
+
+    template<typename SyncReadStream, typename MutableBufferSequence>
+    void readWithTimeout(SyncReadStream &s, const MutableBufferSequence &buffers,
+                         const boost::asio::deadline_timer::duration_type &expiry_time);
 };

@@ -7,8 +7,6 @@ typedef unsigned char byte;
 #include "SerialPort.h"
 #include "Utils.h"
 
-static const int BufferSize = 1024;
-
 class Dynamixel {
 public:
     enum class Commands {
@@ -81,29 +79,31 @@ public:
 
     byte getCommand(const std::string &command);
 
-    int sendReceiveCommand(Commands command, Addresses address, std::vector<byte> data, std::vector<byte> *outData);
+    std::vector<byte> sendReceiveCommand(Commands command, Addresses address, const std::vector<byte> &data);
 
-    int formatCommand(Commands command, Addresses address, std::vector<byte> values, byte *buffer);
+    std::vector<byte> getBuffer(Commands command, Addresses address, const std::vector<byte> &values);
 
     int getPosition();
 
     int getCurrentLoad();
 
-    int setGoalPosition(short goal);
+    void setGoalPosition(short goal);
 
-    int setMovingSpeed(short speed);
+    void setMovingSpeed(short speed);
 
     int getCCWAngleLimit();
 
-    int setCCWAngleLimit(short limit);
+    void setCCWAngleLimit(short limit);
 
     int getCWAngleLimit();
 
-    int setCWAngleLimit(short limit);
+    void setCWAngleLimit(short limit);
 
 private:
     byte _id;
     SerialPort &_port;
 
     std::function<void(bool)> _callback;
+
+    size_t sendCommand(Commands command, Addresses address, const std::vector<byte> &data);
 };
