@@ -1,28 +1,35 @@
 #include "dynamixel/SerialPort.h"
 
-SerialPort::SerialPort() : timeout(boost::posix_time::milliseconds(500)) {
-    port = new boost::asio::serial_port(io);
+using namespace goliath::dynamixel;
+
+SerialPort::SerialPort() : timeout(boost::posix_time::milliseconds(500)),
+                           port(std::make_unique<boost::asio::serial_port>(io)) {
 }
 
-int SerialPort::connect() {
-    port->open("/dev/serial0");
-    port->set_option(boost::asio::serial_port_base::baud_rate(9600));
-    return 1;
+bool SerialPort::connect() {
+    return connect("/dev/serial0", 9600);
 }
 
-int SerialPort::connect(const std::string &device, unsigned int baud) {
+bool SerialPort::connect(const std::string &device, unsigned int baud) {
     try {
         port->open(device);
         port->set_option(boost::asio::serial_port_base::baud_rate(baud));
     } catch (const boost::system::system_error &e) {
-        return 0;
+        BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to serial port " << e.what();
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
-void SerialPort::disconnect() {
+void SerialPort::close() {
     port->close();
+}
+
+SerialPort::~SerialPort() {
+    if (port->is_open()) {
+        close();
+    }
 }
 
 void SerialPort::setTimeout(const boost::posix_time::time_duration &t) {
@@ -67,5 +74,4 @@ void SerialPort::readWithTimeout(SyncReadStream &s, const MutableBufferSequence 
     if (*read_result) {
         throw boost::system::system_error(*read_result);
     }
-
 }
