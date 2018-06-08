@@ -2,8 +2,8 @@
 
 using namespace goliath::dynamixel;
 
-SerialPort::SerialPort() : timeout(boost::posix_time::milliseconds(500)),
-                           port(std::make_unique<boost::asio::serial_port>(io)) {
+SerialPort::SerialPort() : port(std::make_unique<boost::asio::serial_port>(io)),
+                           timeout(boost::posix_time::milliseconds(500)) {
 }
 
 bool SerialPort::connect() {
