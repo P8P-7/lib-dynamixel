@@ -1,11 +1,19 @@
-add_library(libdynamixel
-    Dynamixel.cpp
-    SerialPort.cpp
-)
+project(libdynamixel LANGUAGES CXX)
 
-target_include_directories(libdynamixel
-    PUBLIC
-        ${CMAKE_SOURCE_DIR}/include
-)
+add_library(${PROJECT_NAME}
+        Dynamixel.cpp
+        SerialPort.cpp
+        )
 
 add_definitions(-DBOOST_LOG_DYN_LINK)
+
+target_include_directories(${PROJECT_NAME}
+        PUBLIC
+            ${CMAKE_SOURCE_DIR}/include
+        )
+
+target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+            ${CMAKE_THREAD_LIBS_INIT}
+            ${Boost_LIBRARIES}
+        )
