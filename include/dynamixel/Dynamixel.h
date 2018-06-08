@@ -66,8 +66,6 @@ namespace goliath::dynamixel {
             PunchH = 49,
         };
 
-        Dynamixel();
-
         Dynamixel(byte id, SerialPort &port);
 
         void configure();
