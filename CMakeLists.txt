@@ -18,6 +18,7 @@ add_definitions(-DBOOST_LOG_DYN_LINK)
 add_library(${PROJECT_NAME}
         src/Dynamixel.cpp
         src/SerialPort.cpp
+        src/Utils.cpp
         )
 
 target_include_directories(${PROJECT_NAME}

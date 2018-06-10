@@ -6,10 +6,6 @@ SerialPort::SerialPort() : port(std::make_unique<boost::asio::serial_port>(io)),
                            timeout(boost::posix_time::milliseconds(500)) {
 }
 
-bool SerialPort::connect() {
-    return connect("/dev/serial0", 9600);
-}
-
 bool SerialPort::connect(const std::string &device, unsigned int baud) {
     try {
         port->open(device);

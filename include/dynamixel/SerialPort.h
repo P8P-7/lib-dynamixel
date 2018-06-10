@@ -7,18 +7,32 @@
 namespace goliath::dynamixel {
     class SerialPort {
     public:
+        /**
+         * Construct a serial port without opening it.
+         */
         SerialPort();
 
+        /**
+         * Destroys the serial port
+         */
         virtual ~SerialPort();
 
-        bool connect();
-
+        /**
+         * Create a serial connection with dynamixel actuators.
+         * \param device the serial device to connect with
+         * \param baud the baud rate speed
+         * \return true if connected successfully; otherwise, false.
+         */
         bool connect(const std::string &device, unsigned int baud);
 
+        /**
+         * Close the serial port.
+         */
         void close();
 
         /**
          * Set the timeout on read operations.
+         * \param t duration for the timeout.
          */
         void setTimeout(const boost::posix_time::time_duration &t);
 
@@ -44,6 +58,9 @@ namespace goliath::dynamixel {
 
         boost::posix_time::time_duration timeout;
 
+        /**
+         * https://stackoverflow.com/a/25018876/1480019
+         */
         template<typename SyncReadStream, typename MutableBufferSequence>
         void readWithTimeout(SyncReadStream &s, const MutableBufferSequence &buffers,
                              const boost::asio::deadline_timer::duration_type &expiry_time);
