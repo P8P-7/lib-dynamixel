@@ -21,7 +21,7 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
         callback(true);
     }
 
-    size_t bytesWritten = port.write(instructionPacket);
+    port.write(instructionPacket);
 
     if (callback) {
         callback(false);
