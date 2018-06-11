@@ -128,17 +128,13 @@ void Dynamixel::writeData(Address address, const std::vector<byte> &data) {
     std::vector<byte> params = {static_cast<byte>(address)};
     params.insert(params.end(), data.begin(), data.end());
 
-    send(Instruction::Write, data);
+    send(Instruction::Write, params);
 }
 
 bool Dynamixel::ping() {
     std::vector<byte> statusPacket = send(Instruction::Ping, {});
 
-    if (statusPacket[2] == id) {
-        return true;
-    }
-
-    return false;
+    return statusPacket[2] == id;
 }
 
 int Dynamixel::getFirmwareVersion() {
