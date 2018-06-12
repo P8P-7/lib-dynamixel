@@ -2,7 +2,7 @@
 
 using namespace goliath::dynamixel;
 
-Dynamixel::Dynamixel(byte id, SerialPort &port) : id(id),
+Dynamixel::Dynamixel(byte id, std::shared_ptr<SerialPort> port) : id(id),
                                                   port(port) {
 }
 
@@ -21,7 +21,7 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
         callback(true);
     }
 
-    port.write(instructionPacket);
+    port->write(instructionPacket);
 
     if (callback) {
         callback(false);
@@ -36,7 +36,7 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
     // +----+----+--+------+-----+----------+---+-----------+---------+
     // |0XFF|0XFF|ID|LENGTH|ERROR|PARAMETER1|...|PARAMETER N|CHECK SUM|
     // +----+----+--+------+-----+----------+---+-----------+---------+
-    std::vector<byte> statusPacket = port.read(responseLength);
+    std::vector<byte> statusPacket = port->read(responseLength);
 
     // Assert the argument is a sequence with at least 6+ items.
     if (statusPacket.size() < responseLength) {
@@ -46,9 +46,9 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
     }
 
     // Check the header bytes.
-    if (statusPacket[0] != 0xff || statusPacket[1] != 0xff) {
-        throw std::runtime_error("Wrong header (should be '0xFF0xFF')");
-    }
+    /*if (statusPacket[0] != 0xff || statusPacket[1] != 0xff) {
+        throw std::runtime_error("Wrong header (should be '0xFF 0xFF')");
+    }*/
 
     // Check the error code, if there's one.
     checkError(statusPacket[4]);

@@ -15,7 +15,7 @@ namespace goliath::dynamixel {
         /**
          * Destroys the serial port
          */
-        virtual ~SerialPort();
+        ~SerialPort();
 
         /**
          * Create a serial connection with dynamixel actuators.
@@ -34,7 +34,7 @@ namespace goliath::dynamixel {
          * Set the timeout on read operations.
          * \param t duration for the timeout.
          */
-        void setTimeout(const boost::posix_time::time_duration &t);
+        void setTimeout(const boost::asio::steady_timer::duration &t);
 
         /**
          * Write the supplied data to a serial device.
@@ -53,16 +53,16 @@ namespace goliath::dynamixel {
         std::vector<unsigned char> read(size_t size);
 
     private:
+        using TimerType = boost::asio::steady_timer;
         boost::asio::io_service io;
         std::unique_ptr<boost::asio::serial_port> port;
 
-        boost::posix_time::time_duration timeout;
+        TimerType::duration timeout;
 
         /**
          * https://stackoverflow.com/a/25018876/1480019
          */
-        template<typename SyncReadStream, typename MutableBufferSequence>
-        void readWithTimeout(SyncReadStream &s, const MutableBufferSequence &buffers,
-                             const boost::asio::deadline_timer::duration_type &expiry_time);
+        template<typename MutableBufferSequence>
+        void readWithTimeout(const MutableBufferSequence &buffers);
     };
 }

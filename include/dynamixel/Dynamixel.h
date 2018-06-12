@@ -80,7 +80,7 @@ namespace goliath::dynamixel {
          * \param id the unique ID of a Dynamixel unit. It must be in range (0, 0xFD).
          * \param port the serial port where the Dynamixel unit is connected with.
          */
-        Dynamixel(byte id, SerialPort &port);
+        Dynamixel(byte id, std::shared_ptr<SerialPort> port);
 
         /* Low level functions */
 
@@ -425,7 +425,7 @@ namespace goliath::dynamixel {
 
     private:
         byte id;
-        SerialPort &port;
+        std::shared_ptr<SerialPort> port;
 
         std::function<void(bool)> callback;
 

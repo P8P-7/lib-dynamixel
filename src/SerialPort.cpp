@@ -3,7 +3,7 @@
 using namespace goliath::dynamixel;
 
 SerialPort::SerialPort() : port(std::make_unique<boost::asio::serial_port>(io)),
-                           timeout(boost::posix_time::milliseconds(500)) {
+                           timeout(std::chrono::milliseconds(500)) {
 }
 
 bool SerialPort::connect(const std::string &device, unsigned int baud) {
@@ -28,7 +28,7 @@ SerialPort::~SerialPort() {
     }
 }
 
-void SerialPort::setTimeout(const boost::posix_time::time_duration &t) {
+void SerialPort::setTimeout(const TimerType::duration &t) {
     timeout = t;
 }
 
@@ -39,35 +39,34 @@ size_t SerialPort::write(const std::vector<unsigned char> &data) {
 std::vector<unsigned char> SerialPort::read(size_t size) {
     // Allocate a vector with the desired size
     std::vector<unsigned char> result(size);
-    readWithTimeout(*port, boost::asio::buffer(result), timeout); // Fill it with values
+    readWithTimeout(boost::asio::buffer(result)); // Fill it with values
     return result;
 }
 
-template<typename SyncReadStream, typename MutableBufferSequence>
-void SerialPort::readWithTimeout(SyncReadStream &s, const MutableBufferSequence &buffers,
-                                 const boost::asio::deadline_timer::duration_type &expiry_time) {
+template<typename MutableBufferSequence>
+void SerialPort::readWithTimeout(const MutableBufferSequence &buffers) {
     boost::optional<boost::system::error_code> timer_result;
-    boost::asio::deadline_timer timer(s.get_io_service());
-    timer.expires_from_now(expiry_time);
+    TimerType timer(io);
+    timer.expires_from_now(timeout);
     timer.async_wait([&timer_result](const boost::system::error_code &error) {
-        timer_result.reset(error);
+        timer_result = error;
     });
 
     boost::optional<boost::system::error_code> read_result;
-    boost::asio::async_read(s, buffers, [&read_result](const boost::system::error_code &error, size_t) {
-        read_result.reset(error);
+    boost::asio::async_read(*port, buffers, [&read_result](const boost::system::error_code &error, size_t) {
+        read_result = error;
     });
 
-    s.get_io_service().reset();
-    while (s.get_io_service().run_one()) {
+    io.reset();
+    while (io.run_one()) {
         if (read_result) {
             timer.cancel();
         } else if (timer_result) {
-            s.cancel();
+            port->cancel();
         }
     }
 
-    if (*read_result) {
+    if (read_result && *read_result != boost::system::errc::success) {
         throw boost::system::system_error(*read_result);
     }
 }
