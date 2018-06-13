@@ -5,12 +5,10 @@
 namespace goliath::dynamixel {
     class Utils {
     public:
-        using byte = unsigned char;
+        static std::vector<unsigned char> convertToHL(short pos);
 
-        static std::vector<byte> convertToHL(short pos);
+        static short convertFromHL(unsigned char hexL, unsigned char hexH);
 
-        static short convertFromHL(byte hexL, byte hexH);
-
-        static byte checkSum(std::vector<byte> data);
+        static unsigned char checkSum(std::vector<unsigned char> data);
     };
 }

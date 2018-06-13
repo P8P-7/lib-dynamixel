@@ -8,9 +8,9 @@ namespace goliath::dynamixel {
     public:
         using byte = unsigned char;
 
-        // The instruction set
+        // The instruction set.
         // (see the official Dynamixel AX-12 User's manual p.19)
-        enum class Instruction {
+        enum class Instruction : byte {
             Ping = 1,
             Read = 2,
             Write = 3,
@@ -20,9 +20,9 @@ namespace goliath::dynamixel {
             SyncWrite = 83
         };
 
-        // Control table (addresses)
+        // Control table (addresses).
         // (see the official Dynamixel AX-12 User's manual p.12)
-        enum class Address {
+        enum class Address : byte {
             ModelNumber = 0,
             ModelNumberH = 1,
             FirmwareVersion = 2,
@@ -75,10 +75,20 @@ namespace goliath::dynamixel {
             PunchH = 49,
         };
 
+        enum class Error : byte {
+            InputVoltage = 1,
+            AngleLimit = 2,
+            Overheat = 4,
+            Range = 8,
+            Checksum = 16,
+            Overload = 32,
+            Instruction = 64,
+        };
+
         /**
          * Construct a Dynamixel actuator class.
-         * \param id the unique ID of a Dynamixel unit. It must be in range (0, 0xFD).
-         * \param port the serial port where the Dynamixel unit is connected with.
+         * @param id the unique ID of a Dynamixel unit. It must be in range (0, 0xFD).
+         * @param port the serial port where the Dynamixel unit is connected with.
          */
         Dynamixel(byte id, std::shared_ptr<SerialPort> port);
 
@@ -87,62 +97,68 @@ namespace goliath::dynamixel {
         /**
          * Between sending a instruction packet and receiving the status packet we need
          * to set the GPIO Pin to TX.
-         * \param callback that will set the GPIO pin to the appropriate RX/TX.
+         * @param callback that will set the GPIO pin to the appropriate RX/TX.
          */
         void setDirectionCallback(std::function<void(bool)> callback);
 
         /**
-         * Send an instruction packet and receive the status packet.
-         * \param instruction the instruction for the Dynamixel actuator to perform.
-         * \param data a vector of bytes containing the packet's data: the
+         * Send an instruction packet.
+         * @param instruction the instruction for the Dynamixel actuator to perform.
+         * @param data a vector of bytes containing the packet's data: the
          * instruction to perform or the status of the Dynamixel actuator.
-         * \return a vector of bytes containing the status packet's data.
+         * @return the number of bytes written.
          */
-        std::vector<byte> send(Instruction instruction, const std::vector<byte> &data);
+        size_t send(Instruction instruction, const std::vector<byte> &data);
+
+        /**
+         * Read the status packet.
+         * @return a vector of bytes containing the status packet's data.
+         */
+        std::vector<byte> read();
 
         /**
          * The "instruction packet" is the packet sent to the Dynamixel units.
-         * \param instruction the instruction for the Dynamixel actuator to perform.
-         * \param data a vector of bytes containing the packet's data: the
+         * @param instruction the instruction for the Dynamixel actuator to perform.
+         * @param data a vector of bytes containing the packet's data: the
          * instruction to perform or the status of the Dynamixel actuator.
-         * \return a vector of bytes containing the instruction packet's data.
+         * @return a vector of bytes containing the instruction packet's data.
          */
         std::vector<byte> getInstructionPacket(Instruction instruction, const std::vector<byte> &data);
 
         /* High level functions */
 
         /**
-         * Read bytes from the control table of the specified Dynamixel unit.
-         * \param address the starting address of the location where the data
+         * Read data from the control table of the specified Dynamixel unit.
+         * @param address the starting address of the location where the data
          * is to be read.
-         * \param data the length of the data to be read
-         * \return a vector of bytes containing the status packet's data.
+         * @param data the length of the data to be read.
+         * @return the data that has been read.
          */
-        std::vector<byte> readData(Address address, size_t length);
+        int readData(Address address, size_t length);
 
         /**
          * Write bytes to the control table of the specified Dynamixel unit.
-         * \param address the starting address of the location where the data
+         * @param address the starting address of the location where the data
          * is to be written.
-         * \param data the bytes of the data to be written
+         * @param data the bytes of the data to be written.
          */
         void writeData(Address address, const std::vector<byte> &data);
 
         /**
          * Ping the specified Dynamixel unit.
-         * \return true if the specified unit is available; otherwise, false.
+         * @return true if the specified unit is available; otherwise, false.
          */
         bool ping();
 
         /* High level accessors */
 
         /**
-         * \return the firmware version of the specified Dynamixel unit.
+         * @return the firmware version of the specified Dynamixel unit.
          */
         int getFirmwareVersion();
 
         /**
-         * \return the communication speed (baud rate) of the specified
+         * @return the communication speed (baud rate) of the specified
          * Dynamixel unit.
          */
         unsigned int getBaudRate();
@@ -150,7 +166,7 @@ namespace goliath::dynamixel {
         /**
          * The return delay time is the time it takes (in uSec) for the status
          * packet to return after the instruction packet is sent.
-         * \return the return delay time of the specified Dynamixel unit.
+         * @return the return delay time of the specified Dynamixel unit.
          */
         int getReturnDelayTime();
 
@@ -158,7 +174,7 @@ namespace goliath::dynamixel {
          * The goal position should be higher or equal than this value, otherwise
          * the *Angle Limit Error Bit* (the second error bit of status packets)
          * will be set to `1`.
-         * \return the *clockwise angle limit* of the specified Dynamixel unit.
+         * @return the *clockwise angle limit* of the specified Dynamixel unit.
          */
         int getCWAngleLimit();
 
@@ -166,7 +182,7 @@ namespace goliath::dynamixel {
          * The goal position should be lower or equal than this value, otherwise
          * the *Angle Limit Error Bit* (the second error bit of status packets)
          * will be set to `1`.
-         * \return the *counter clockwise angle limit* of the specified
+         * @return the *counter clockwise angle limit* of the specified
          * Dynamixel unit.
          */
         int getCCWAngleLimit();
@@ -176,7 +192,7 @@ namespace goliath::dynamixel {
          * this value, the *Over Heating Error Bit* (the third error bit of
          * status packets) will be set to `1`.
          * The values are in degrees Celsius.
-         * \return the maximum tolerated internal temperature for the specified
+         * @return the maximum tolerated internal temperature for the specified
          * Dynamixel unit.
          */
         int getMaxTemperature();
@@ -186,7 +202,7 @@ namespace goliath::dynamixel {
          * this value, the *Voltage Range Error Bit* (the first error bit of
          * status packets) will be set to `1`.
          * The values are in Volts.
-         * \return the minimum tolerated operating voltage for the specified
+         * @return the minimum tolerated operating voltage for the specified
          * Dynamixel unit.
          */
         int getMinVoltage();
@@ -196,7 +212,7 @@ namespace goliath::dynamixel {
          * this value, the *Voltage Range Error Bit* (the first error bit of
          * status packets) will be set to `1`.
          * The values are in Volts.
-         * \return the maximum tolerated operating voltage for the specified
+         * @return the maximum tolerated operating voltage for the specified
          * Dynamixel unit.
          */
         int getMaxVoltage();
@@ -208,7 +224,7 @@ namespace goliath::dynamixel {
          * If this value is equal to `0`, the Dynamixel unit is configured in
          * *free run mode*.
          *
-         * \return the initial maximum torque output of the specified Dynamixel
+         * @return the initial maximum torque output of the specified Dynamixel
          * unit.
          */
         int getMaxTorque();
@@ -223,7 +239,7 @@ namespace goliath::dynamixel {
          * +----------------+----------------------------------------+
          * | 2              | Respond to all instructions            |
          * +----------------+----------------------------------------+
-         * \return whether the specified Dynamixel unit is configured to return a
+         * @return whether the specified Dynamixel unit is configured to return a
          * *status packet* after receiving an *instruction packet*.
          */
         int getStatusReturnLevel();
@@ -231,25 +247,25 @@ namespace goliath::dynamixel {
         /**
          * The calibration value is used to compensate the differences between the
          * potentiometers used in the Dynamixel units.
-         * \return the "down calibration" value of the specified Dynamixel unit.
+         * @return the "down calibration" value of the specified Dynamixel unit.
          */
         int getDownCalibration();
 
         /**
          * The calibration value is used to compensate the differences between the
          * potentiometers used in the Dynamixel units.
-         * \return the "up calibration" value of the specified Dynamixel unit.
+         * @return the "up calibration" value of the specified Dynamixel unit.
          */
         int getUpCalibration();
 
         /**
-         * \return true if the torque of the specified Dynamixel unit is
+         * @return true if the torque of the specified Dynamixel unit is
          * enabled; otherwise, false.
          */
         bool isTorqueEnabled();
 
         /**
-         * \return true if the LED of the specified Dynamixel unit is ON
+         * @return true if the LED of the specified Dynamixel unit is ON
          * otherwise, false.
          */
         bool isLedEnabled();
@@ -257,7 +273,7 @@ namespace goliath::dynamixel {
         /**
          * The compliance feature can be utilized for absorbing shocks at the
          * output shaft.
-         * \return the clockwise compliance margin of the specified Dynamixel
+         * @return the clockwise compliance margin of the specified Dynamixel
          * unit.
          */
         int getCWComplianceMargin();
@@ -265,7 +281,7 @@ namespace goliath::dynamixel {
         /**
          * The compliance feature can be utilized for absorbing shocks at the
          * output shaft.
-         * \return the counter clockwise compliance margin of the specified
+         * @return the counter clockwise compliance margin of the specified
          * Dynamixel unit.
          */
         int getCCWComplianceMargin();
@@ -273,7 +289,7 @@ namespace goliath::dynamixel {
         /**
          * The compliance feature can be utilized for absorbing shocks at the
          * output shaft.
-         * \return the clockwise compliance slope of the specified Dynamixel
+         * @return the clockwise compliance slope of the specified Dynamixel
          * unit.
          */
         int getCWComplianceSlope();
@@ -281,13 +297,13 @@ namespace goliath::dynamixel {
         /**
          * The compliance feature can be utilized for absorbing shocks at the
          * output shaft.
-         * \return the counter clockwise compliance slope of the specified
+         * @return the counter clockwise compliance slope of the specified
          * Dynamixel unit.
          */
         int getCCWComplianceSlope();
 
         /**
-         * \return the requested goal angular position of the specified
+         * @return the requested goal angular position of the specified
          * Dynamixel unit.
          */
         int getGoalPosition();
@@ -299,23 +315,23 @@ namespace goliath::dynamixel {
          * Zero is a special value meaning that the largest possible velocity is
          * supplied for the configured voltage, e.g. no velocity control is
          * applied.
-         * \return the angular velocity of the specified Dynamixel unit.
+         * @return the angular velocity of the specified Dynamixel unit.
          */
         int getMovingSpeed();
 
         /**
-         * \return the maximum torque output of the specified Dynamixel unit.
+         * @return the maximum torque output of the specified Dynamixel unit.
          */
         int getTorqueLimit();
 
         /**
-         * \return the current angular position defined in range (0, 1023)
+         * @return the current angular position defined in range (0, 1023)
          * of the specified Dynamixel unit.
          */
         int getPresentPosition();
 
         /**
-         * \return the current angular velocity of the specified Dynamixel unit.
+         * @return the current angular velocity of the specified Dynamixel unit.
          */
         int getPresentSpeed();
 
@@ -324,38 +340,38 @@ namespace goliath::dynamixel {
          * direction.
          * If the returned value is positive, the load is applied to the counter
          * clockwise direction.
-         * \return the magnitude of the load applied to the specified Dynamixel
+         * @return the magnitude of the load applied to the specified Dynamixel
          * unit.
          */
         int getPresentLoad();
 
         /**
-         * \return the voltage currently applied to the specified Dynamixel
+         * @return the voltage currently applied to the specified Dynamixel
          * unit (in Volts).
          */
         int getPresentVoltage();
 
         /**
-         * \return the internal temperature of the specified Dynamixel unit (in
+         * @return the internal temperature of the specified Dynamixel unit (in
          * Degrees Celsius).
          */
         int getPresentTemperature();
 
         /**
-         * \return true if the specified Dynamixel unit is moving by its own
+         * @return true if the specified Dynamixel unit is moving by its own
          * power; otherwise, false.
          */
         bool isMoving();
 
         /**
-         * \return true if the specified Dynamixel unit is locked; otherwise,
+         * @return true if the specified Dynamixel unit is locked; otherwise,
          * false.
          */
         bool isLocked();
 
         /**
          * The initial value is set to 0x20 and its maximum value is 0x3FF.
-         * \return the minimum current supplied to the motor of the specified
+         * @return the minimum current supplied to the motor of the specified
          * Dynamixel unit during operation.
          */
         int getPunch();
@@ -363,28 +379,28 @@ namespace goliath::dynamixel {
         /* High level mutators */
 
         /**
-         * Set the *ID* for the specified Dynamixel unit
+         * Set the *ID* for the specified Dynamixel unit.
          * i.e. the unique ID number assigned to actuators for identifying them.
          * Different IDs are required for each Dynamixel actuators that are on the
          * same network.
-         * \param newId the new unique ID assigned to the selected
+         * @param newId the new unique ID assigned to the selected
          * Dynamixel unit. It must be in range (0, 0xFE).
          */
         void setId(byte newId);
 
         /**
-         * Set the *baud rate* for the specified Dynamixel unit
+         * Set the *baud rate* for the specified Dynamixel unit.
          * i.e. set the connection speed with the actuator.
-         * \param baudRate the new baud rate assigned to the selected
+         * @param baudRate the new baud rate assigned to the selected
          * Dynamixel unit.
          */
         void setBaudRate(unsigned int baudRate);
 
         /**
-         * Set the *return delay time* for the specified Dynamixel unit
+         * Set the *return delay time* for the specified Dynamixel unit.
          * i.e. the time for the status packets to return after the instruction
          * packet is sent.
-         * \param returnDelayTime the new return delay time. It must be in
+         * @param returnDelayTime the new return delay time. It must be in
          * range (0, 255).
          */
         void setReturnDelayTime(int returnDelayTime);
@@ -394,8 +410,8 @@ namespace goliath::dynamixel {
          * the specified `angleLimit`.
          * The *goal position* should be higher or equal than this value, otherwise
          * the *Angle Limit Error Bit* (the second error bit of status packets)
-         * will be set to ``1``.
-         * \param angleLimit the *clockwise angle limit* to be set for the
+         * will be set to `1`.
+         * @param angleLimit the *clockwise angle limit* to be set for the
          * specified Dynamixel unit. It must be in range (0, 1023).
          */
         void setCWAngleLimit(short angleLimit);
@@ -405,21 +421,21 @@ namespace goliath::dynamixel {
          * to the specified `angleLimit`.
          * The *goal position* should be higher or equal than this value, otherwise
          * the *Angle Limit Error Bit* (the second error bit of status packets)
-         * will be set to ``1``.
-         * \param angleLimit the *clockwise angle limit* to be set for the
+         * will be set to `1`.
+         * @param angleLimit the *clockwise angle limit* to be set for the
          * specified Dynamixel unit. It must be in range (0, 1023).
          */
         void setCCWAngleLimit(short angleLimit);
 
         /**
          * Set the *moving speed* for the specified Dynamixel unit.
-         * \param speed the new moving speed. It must be in range (0, 1023).
+         * @param speed the new moving speed. It must be in range (0, 1023).
          */
         void setMovingSpeed(short speed);
 
         /**
          * Set the *goal position* for the specified Dynamixel unit.
-         * \param speed the new goal position. It must be in range (0, 1023).
+         * @param speed the new goal position. It must be in range (0, 1023).
          */
         void setGoalPosition(short position);
 
@@ -431,14 +447,14 @@ namespace goliath::dynamixel {
 
         /**
          * Check error bit flags. And log them if there's any error.
-         * @param errorCode error bit flags
+         * @param errorCode error bit flags.
          */
         void checkError(byte errorCode);
 
         /**
-         * Removes all irrelevant data from the status packet
-         * \param statusPacket a vector of bytes containing the status packet's data.
-         * \return a vector of bytes containing the cleaned status packet's data.
+         * Removes all irrelevant data from the status packet.
+         * @param statusPacket a vector of bytes containing the status packet's data.
+         * @return a vector of bytes containing the cleaned status packet's data.
          */
         std::vector<byte> cleanStatusPacket(std::vector<byte> &statusPacket);
     };

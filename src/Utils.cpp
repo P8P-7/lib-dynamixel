@@ -2,15 +2,15 @@
 
 using namespace goliath::dynamixel;
 
-std::vector<Utils::byte> Utils::convertToHL(short pos) {
-    return {(byte) pos, (byte)(pos >> 8)};
+std::vector<unsigned char> Utils::convertToHL(short pos) {
+    return {(unsigned char) pos, (unsigned char) (pos >> 8)};
 }
 
-short Utils::convertFromHL(byte hexL, byte hexH) {
+short Utils::convertFromHL(unsigned char hexL, unsigned char hexH) {
     return (short) ((hexH << 8) + hexL);
 }
 
-Utils::byte Utils::checkSum(std::vector<byte> data) {
+unsigned char Utils::checkSum(std::vector<unsigned char> data) {
     int cs = 0;
 
     // Skip first 2 items (padding)
@@ -18,5 +18,5 @@ Utils::byte Utils::checkSum(std::vector<byte> data) {
         cs += data[i];
     }
 
-    return (byte) ~cs;
+    return (unsigned char) ~cs;
 }

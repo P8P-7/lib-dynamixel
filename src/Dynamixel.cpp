@@ -3,17 +3,17 @@
 using namespace goliath::dynamixel;
 
 Dynamixel::Dynamixel(byte id, std::shared_ptr<SerialPort> port) : id(id),
-                                                  port(port) {
+                                                                  port(port) {
 }
 
 void Dynamixel::setDirectionCallback(std::function<void(bool)> callback) {
     callback = std::move(callback);
 }
 
-std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std::vector<byte> &data) {
+size_t Dynamixel::send(Instruction instruction, const std::vector<byte> &data) {
     // The structure of the instruction packet is as the following:
     // +----+----+--+------+-----------+----------+---+-----------+---------+
-    // |0XFF|0XFF|ID|LENGTH|INSTRUCTION|PARAMETER1|...|PARAMETER N|CHECK SUM|
+    // |0xFF|0xFF|ID|LENGTH|INSTRUCTION|PARAMETER1|...|PARAMETER N|CHECK SUM|
     // +----+----+--+------+-----------+----------+---+-----------+---------+
     std::vector<byte> instructionPacket = getInstructionPacket(instruction, data);
 
@@ -21,37 +21,50 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
         callback(true);
     }
 
-    port->write(instructionPacket);
+    size_t bytesWriten = port->write(instructionPacket);
 
     if (callback) {
         callback(false);
     }
 
-    size_t responseLength = 6;
-    if (instruction == Instruction::Read) {
-        responseLength += data[0];
-    }
+    return bytesWriten;
+}
 
+std::vector<Dynamixel::byte> Dynamixel::read() {
     // The structure of the status packet is as the following:
     // +----+----+--+------+-----+----------+---+-----------+---------+
-    // |0XFF|0XFF|ID|LENGTH|ERROR|PARAMETER1|...|PARAMETER N|CHECK SUM|
+    // |0xFF|0xFF|ID|LENGTH|ERROR|PARAMETER1|...|PARAMETER N|CHECK SUM|
     // +----+----+--+------+-----+----------+---+-----------+---------+
-    std::vector<byte> statusPacket = port->read(responseLength);
 
-    // Assert the argument is a sequence with at least 6+ items.
-    if (statusPacket.size() < responseLength) {
+    // Read the first 5 bytes.
+    std::vector<byte> statusPacket = port->read(5); // [0xFF, 0xFF, id, length, error]
+
+    // Assert the packet is a sequence with at least 5 items.
+    if (statusPacket.size() < 5) {
         throw std::runtime_error(
-                "Incomplete packet. Received " + std::to_string(statusPacket.size()) + " instead of expected " +
-                std::to_string(responseLength) + " bytes.");
+                "Incomplete packet. Received " + std::to_string(statusPacket.size()) + " instead of expected 5 bytes.");
     }
 
     // Check the header bytes.
-    /*if (statusPacket[0] != 0xff || statusPacket[1] != 0xff) {
-        throw std::runtime_error("Wrong header (should be '0xFF 0xFF')");
-    }*/
+    if (statusPacket[0] != '\xFF' || statusPacket[1] != '\xFF') {
+        throw std::runtime_error("Wrong header; should be equal to [0xFF, 0xFF]");
+    }
 
-    // Check the error code, if there's one.
-    checkError(statusPacket[4]);
+    byte length = statusPacket[3];
+    byte errorCode = statusPacket[4];
+
+    if (errorCode != 0 || length == 0) {
+        // Check the error code, if there's one.
+        checkError(errorCode);
+
+        // Return early with the status packet so far; no need to read further.
+        return statusPacket;
+    }
+
+    // Read the next 1 - 2 bytes; depending on the length.
+    // Omit the checksum as we're not checking against it.
+    std::vector<byte> statusPacketEnd = port->read(length > 1 ? 2 : 1); // [parameter1, ...]
+    statusPacket.insert(statusPacket.end(), statusPacketEnd.begin(), statusPacketEnd.end());
 
     return statusPacket;
 }
@@ -61,8 +74,8 @@ std::vector<Dynamixel::byte> Dynamixel::getInstructionPacket(Instruction instruc
 
     size_t numberOfParameters = data.size();
 
-    instructionPacket.push_back(0xff);
-    instructionPacket.push_back(0xff);
+    instructionPacket.push_back('\xFF');
+    instructionPacket.push_back('\xFF');
     instructionPacket.push_back(id);
 
     // bodyLength
@@ -77,51 +90,55 @@ std::vector<Dynamixel::byte> Dynamixel::getInstructionPacket(Instruction instruc
     }
 
     // checksum
-    instructionPacket.push_back(Utils::checkSum(instructionPacket));
+    byte checkSum = Utils::checkSum(instructionPacket);
+    instructionPacket.push_back(checkSum);
 
     return instructionPacket;
 }
 
 void Dynamixel::checkError(byte errorCode) {
-    if (errorCode & (1u << 6u)) { // Instruction error
+    if ((errorCode & static_cast<byte>(Error::Instruction)) != 0u) { // Instruction error
         BOOST_LOG_TRIVIAL(warning) << "Instruction error: a undefined instruction is transmitted.";
     }
-    if (errorCode & (1u << 5u)) { // Overload error
+    if ((errorCode & static_cast<byte>(Error::Overload)) != 0u) { // Overload error
         BOOST_LOG_TRIVIAL(warning)
             << "Overload error: the current load cannot be controlled with the set maximum torque.";
     }
-    if (errorCode & (1u << 4u)) { // Checksum error
+    if ((errorCode & static_cast<byte>(Error::Checksum)) != 0u) { // Checksum error
         BOOST_LOG_TRIVIAL(warning) << "Checksum error: the checksum of the transmitted instruction packet is invalid.";
     }
-    if (errorCode & (1u << 3u)) { // Range error
+    if ((errorCode & static_cast<byte>(Error::Range)) != 0u) { // Range error
         BOOST_LOG_TRIVIAL(warning) << "Range error: given command is beyond the range of usage.";
     }
-    if (errorCode & (1u << 2u)) { // Overheating error
+    if ((errorCode & static_cast<byte>(Error::Overheat)) != 0u) { // Overheating error
         BOOST_LOG_TRIVIAL(warning) << "Overheating error: internal temperature is out of the range.";
     }
-    if (errorCode & (1u << 1u)) { // Angle limit error
+    if ((errorCode & static_cast<byte>(Error::AngleLimit)) != 0u) { // Angle limit error
         BOOST_LOG_TRIVIAL(warning) << "Angle limit error: goal position is not between CW angle limit and CCW.";
     }
-    if (errorCode & (1u << 0u)) { // Input voltage error
+    if ((errorCode & static_cast<byte>(Error::InputVoltage)) != 0u) { // Input voltage error
         BOOST_LOG_TRIVIAL(warning) << "Input voltage error: applied voltage is out of the range.";
     }
 }
 
-std::vector<Dynamixel::byte> Dynamixel::cleanStatusPacket(std::vector<byte> &statusPacket) {
-    // Remove the checksum
-    statusPacket.pop_back();
-
-    // Remove the first 5 elements, and shift everything else down by 5 indices.
-    statusPacket.erase(statusPacket.begin(), statusPacket.begin() + 5);
-
-    return statusPacket;
-}
-
-std::vector<Dynamixel::byte> Dynamixel::readData(Address address, size_t length) {
+int Dynamixel::readData(Address address, size_t length) {
     std::vector<byte> params = {static_cast<byte>(address), static_cast<byte>(length)};
-    std::vector<byte> statusPacket = send(Instruction::Read, params);
+    send(Instruction::Read, params);
 
-    return cleanStatusPacket(statusPacket);
+    std::vector<byte> statusPacket = read();
+
+    // Assert the packet is a sequence with at least 6 items.
+    if (statusPacket.size() < 6) {
+        return -1;
+    }
+
+    std::vector<byte> data = cleanStatusPacket(statusPacket);
+
+    if (data.size() == 2) {
+        return Utils::convertFromHL(data[0], data[1]);
+    }
+
+    return data[0];
 }
 
 void Dynamixel::writeData(Address address, const std::vector<byte> &data) {
@@ -131,196 +148,148 @@ void Dynamixel::writeData(Address address, const std::vector<byte> &data) {
     send(Instruction::Write, params);
 }
 
+std::vector<Dynamixel::byte> Dynamixel::cleanStatusPacket(std::vector<byte> &statusPacket) {
+    // Remove the first 5 elements, and shift everything else down by 5 indices.
+    statusPacket.erase(statusPacket.begin(), statusPacket.begin() + 5);
+
+    return statusPacket;
+}
+
 bool Dynamixel::ping() {
-    std::vector<byte> statusPacket = send(Instruction::Ping, {});
+    send(Instruction::Ping, {});
+    std::vector<byte> statusPacket = read();
 
     return statusPacket[2] == id;
 }
 
 int Dynamixel::getFirmwareVersion() {
-    std::vector<byte> data = readData(Address::FirmwareVersion, 1);
-
-    return data[0];
+    return readData(Address::FirmwareVersion, 1);
 }
 
 unsigned int Dynamixel::getBaudRate() {
-    std::vector<byte> data = readData(Address::BaudRate, 1);
-    byte rawValue = data[0];
+    int value = readData(Address::BaudRate, 1);
 
-    return static_cast<unsigned int>(2000000 / (rawValue + 1));
+    if (value == -1) {
+        return 0;
+    }
+
+    return static_cast<unsigned int>(2000000 / (value + 1));
 }
 
 int Dynamixel::getReturnDelayTime() {
-    std::vector<byte> data = readData(Address::ReturnDelayTime, 1);
-    byte rawValue = data[0];
+    int value = readData(Address::ReturnDelayTime, 1);
 
-    return 2 * rawValue;
+    if (value == -1) {
+        return value;
+    }
+
+    return 2 * value;
 }
 
 int Dynamixel::getCWAngleLimit() {
-    std::vector<byte> data = readData(Address::CWAngleLimit, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::CWAngleLimit, 2);
 }
 
 int Dynamixel::getCCWAngleLimit() {
-    std::vector<byte> data = readData(Address::CCWAngleLimit, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::CCWAngleLimit, 2);
 }
 
 int Dynamixel::getMaxTemperature() {
-    std::vector<byte> data = readData(Address::HighestLimitTemperature, 1);
-
-    return data[0];
+    return readData(Address::HighestLimitTemperature, 1);
 }
 
 int Dynamixel::getMinVoltage() {
-    std::vector<byte> data = readData(Address::LowestLimitVoltage, 1);
-    byte rawValue = data[0];
+    int value = readData(Address::LowestLimitVoltage, 1);
 
-    return rawValue / 10;
+    if (value == -1) {
+        return value;
+    }
+
+    return value / 10;
 }
 
 int Dynamixel::getMaxVoltage() {
-    std::vector<byte> data = readData(Address::HighestLimitVoltage, 1);
-    byte rawValue = data[0];
+    int value = readData(Address::HighestLimitVoltage, 1);
 
-    return rawValue / 10;
+    if (value == -1) {
+        return value;
+    }
+
+    return value / 10;
 }
 
 int Dynamixel::getMaxTorque() {
-    std::vector<byte> data = readData(Address::MaxTorque, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::MaxTorque, 2);
 }
 
 int Dynamixel::getStatusReturnLevel() {
-    std::vector<byte> data = readData(Address::StatusReturnLevel, 1);
-
-    return data[0];
+    return readData(Address::StatusReturnLevel, 1);
 }
 
 int Dynamixel::getDownCalibration() {
-    std::vector<byte> data = readData(Address::DownCalibration, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::DownCalibration, 2);
 }
 
 int Dynamixel::getUpCalibration() {
-    std::vector<byte> data = readData(Address::UpCalibration, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::UpCalibration, 2);
 }
 
 bool Dynamixel::isTorqueEnabled() {
-    std::vector<byte> data = readData(Address::TorqueStatus, 1);
-
-    return data[0] == 1;
+    return readData(Address::TorqueStatus, 1) == 1;
 }
 
 bool Dynamixel::isLedEnabled() {
-    std::vector<byte> data = readData(Address::LEDStatus, 1);
-
-    return data[0] == 1;
+    return readData(Address::LEDStatus, 1) == 1;
 }
 
 int Dynamixel::getCWComplianceMargin() {
-    std::vector<byte> data = readData(Address::CWComplianceMargin, 1);
-
-    return data[0];
+    return readData(Address::CWComplianceMargin, 1);
 }
 
 int Dynamixel::getCCWComplianceMargin() {
-    std::vector<byte> data = readData(Address::CCWComplianceMargin, 1);
-
-    return data[0];
+    return readData(Address::CCWComplianceMargin, 1);
 }
 
 int Dynamixel::getCWComplianceSlope() {
-    std::vector<byte> data = readData(Address::CWComplianceSlope, 1);
-
-    return data[0];
+    return readData(Address::CWComplianceSlope, 1);
 }
 
 int Dynamixel::getCCWComplianceSlope() {
-    std::vector<byte> data = readData(Address::CCWComplianceSlope, 1);
-
-    return data[0];
+    return readData(Address::CCWComplianceSlope, 1);
 }
 
 int Dynamixel::getGoalPosition() {
-    std::vector<byte> data = readData(Address::GoalPosition, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::GoalPosition, 2);
 }
 
 int Dynamixel::getMovingSpeed() {
-    std::vector<byte> data = readData(Address::MovingSpeed, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::MovingSpeed, 2);
 }
 
 int Dynamixel::getTorqueLimit() {
-    std::vector<byte> data = readData(Address::TorqueLimit, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::TorqueLimit, 2);
 }
 
 int Dynamixel::getPresentPosition() {
-    std::vector<byte> data = readData(Address::PresentPosition, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::PresentPosition, 2);
 }
 
 int Dynamixel::getPresentSpeed() {
-    std::vector<byte> data = readData(Address::PresentSpeed, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::PresentSpeed, 2);
 }
 
 int Dynamixel::getPresentLoad() {
-    std::vector<byte> data = readData(Address::PresentLoad, 2);
+    std::vector<byte> params = {static_cast<byte>(Address::PresentLoad), 2};
+    send(Instruction::Read, params);
+
+    std::vector<byte> statusPacket = read();
+
+    // Assert the packet is a sequence with at least 6 items.
+    if (statusPacket.size() < 6) {
+        return -1;
+    }
+
+    std::vector<byte> data = cleanStatusPacket(statusPacket);
 
     if (data.size() == 2) {
         int loadDirection = (data[1] & (1u << 2u)) == 0u ? -1 : 1;
@@ -336,38 +305,35 @@ int Dynamixel::getPresentLoad() {
 }
 
 int Dynamixel::getPresentVoltage() {
-    std::vector<byte> data = readData(Address::PresentVoltage, 1);
-    byte rawValue = data[0];
+    int value = readData(Address::PresentVoltage, 1);
 
-    return rawValue / 10;
+    if (value == -1) {
+        return value;
+    }
+
+    return value / 10;
 }
 
 int Dynamixel::getPresentTemperature() {
-    std::vector<byte> data = readData(Address::PresentTemperature, 1);
+    int value = readData(Address::PresentTemperature, 1);
 
-    return data[0];
+    if (value == -1) {
+        return value;
+    }
+
+    return value / 10;
 }
 
 bool Dynamixel::isMoving() {
-    std::vector<byte> data = readData(Address::Moving, 1);
-
-    return data[0] == 1;
+    return readData(Address::Moving, 1) == 1;
 }
 
 bool Dynamixel::isLocked() {
-    std::vector<byte> data = readData(Address::Lock, 1);
-
-    return data[0] == 1;
+    return readData(Address::Lock, 1) == 1;
 }
 
 int Dynamixel::getPunch() {
-    std::vector<byte> data = readData(Address::Punch, 2);
-
-    if (data.size() == 2) {
-        return Utils::convertFromHL(data[0], data[1]);
-    }
-
-    return -1;
+    return readData(Address::Punch, 2);
 }
 
 void Dynamixel::setId(byte newId) {
