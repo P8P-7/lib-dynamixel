@@ -29,7 +29,7 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
 
     size_t responseLength = 6;
     if (instruction == Instruction::Read) {
-        responseLength += data[0];
+        responseLength += data[1];
     }
 
     // The structure of the status packet is as the following:
