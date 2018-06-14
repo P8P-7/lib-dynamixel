@@ -3,7 +3,7 @@
 using namespace goliath::dynamixel;
 
 Dynamixel::Dynamixel(byte id, std::shared_ptr<SerialPort> port) : id(id),
-                                                                  port(port) {
+                                                                  port(std::move(port)) {
 }
 
 void Dynamixel::setDirectionCallback(std::function<void(bool)> callback) {
@@ -321,7 +321,7 @@ void Dynamixel::setId(byte newId) {
 }
 
 void Dynamixel::setBaudRate(unsigned int baudRate) {
-    writeData(Address::BaudRate, {static_cast<byte>(round(2000000 / baudRate) - 1)});
+    writeData(Address::BaudRate, {static_cast<byte>(round(2000000.0 / baudRate) - 1)});
 }
 
 void Dynamixel::setReturnDelayTime(int returnDelayTime) {
