@@ -102,19 +102,13 @@ namespace goliath::dynamixel {
         void setDirectionCallback(std::function<void(bool)> callback);
 
         /**
-         * Send an instruction packet.
+         * Send an instruction packet and receive the status packet.
          * @param instruction the instruction for the Dynamixel actuator to perform.
          * @param data a vector of bytes containing the packet's data: the
          * instruction to perform or the status of the Dynamixel actuator.
-         * @return the number of bytes written.
-         */
-        size_t send(Instruction instruction, const std::vector<byte> &data);
-
-        /**
-         * Read the status packet.
          * @return a vector of bytes containing the status packet's data.
          */
-        std::vector<byte> read();
+        std::vector<byte> send(Instruction instruction, const std::vector<byte> &data);
 
         /**
          * The "instruction packet" is the packet sent to the Dynamixel units.

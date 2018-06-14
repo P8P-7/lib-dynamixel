@@ -7,10 +7,10 @@ Dynamixel::Dynamixel(byte id, std::shared_ptr<SerialPort> port) : id(id),
 }
 
 void Dynamixel::setDirectionCallback(std::function<void(bool)> callback) {
-    callback = std::move(callback);
+    this->callback = std::move(callback);
 }
 
-size_t Dynamixel::send(Instruction instruction, const std::vector<byte> &data) {
+std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std::vector<byte> &data) {
     // The structure of the instruction packet is as the following:
     // +----+----+--+------+-----------+----------+---+-----------+---------+
     // |0xFF|0xFF|ID|LENGTH|INSTRUCTION|PARAMETER1|...|PARAMETER N|CHECK SUM|
@@ -21,28 +21,28 @@ size_t Dynamixel::send(Instruction instruction, const std::vector<byte> &data) {
         callback(true);
     }
 
-    size_t bytesWritten = port->write(instructionPacket);
+    port->write(instructionPacket);
 
     if (callback) {
         callback(false);
     }
 
-    return bytesWritten;
-}
+    size_t responseLength = 6;
+    if (instruction == Instruction::Read) {
+        responseLength += data[0];
+    }
 
-std::vector<Dynamixel::byte> Dynamixel::read() {
     // The structure of the status packet is as the following:
     // +----+----+--+------+-----+----------+---+-----------+---------+
     // |0xFF|0xFF|ID|LENGTH|ERROR|PARAMETER1|...|PARAMETER N|CHECK SUM|
     // +----+----+--+------+-----+----------+---+-----------+---------+
+    std::vector<byte> statusPacket = port->read(responseLength);
 
-    // Read the first 5 bytes.
-    std::vector<byte> statusPacket = port->read(5); // [0xFF, 0xFF, id, length, error]
-
-    // Assert the packet is a sequence with at least 5 items.
-    if (statusPacket.size() < 5) {
+    // Assert the packet is a sequence with at least 6+ items.
+    if (statusPacket.size() < responseLength) {
         throw std::runtime_error(
-                "Incomplete packet. Received " + std::to_string(statusPacket.size()) + " instead of expected 5 bytes.");
+                "Incomplete packet. Received " + std::to_string(statusPacket.size()) + " instead of expected " +
+                std::to_string(responseLength) + " bytes.");
     }
 
     // Check the header bytes.
@@ -50,21 +50,8 @@ std::vector<Dynamixel::byte> Dynamixel::read() {
         throw std::runtime_error("Wrong header; should be equal to [0xFF, 0xFF]");
     }
 
-    byte length = statusPacket[3];
-    byte errorCode = statusPacket[4];
-
-    if (errorCode != 0 || length == 0) {
-        // Check the error code, if there's one.
-        checkError(errorCode);
-
-        // Return early with the status packet so far; no need to read further.
-        return statusPacket;
-    }
-
-    // Read the next 1 - 2 bytes; depending on the length.
-    // Omit the checksum as we're not checking against it.
-    std::vector<byte> statusPacketEnd = port->read(length > 1 ? 2 : 1); // [parameter1, ...]
-    statusPacket.insert(statusPacket.end(), statusPacketEnd.begin(), statusPacketEnd.end());
+    // Check the error code, if there's one.
+    checkError(statusPacket[4]);
 
     return statusPacket;
 }
@@ -123,16 +110,13 @@ void Dynamixel::checkError(byte errorCode) {
 
 int Dynamixel::readData(Address address, size_t length) {
     std::vector<byte> params = {static_cast<byte>(address), static_cast<byte>(length)};
-    send(Instruction::Read, params);
+    std::vector<byte> statusPacket = send(Instruction::Read, params);
+    std::vector<byte> data = cleanStatusPacket(statusPacket);
 
-    std::vector<byte> statusPacket = read();
-
-    // Assert the packet is a sequence with at least 6 items.
-    if (statusPacket.size() < 6) {
+    // Assert that the packet is the correct size.
+    if (data.size() != length) {
         return -1;
     }
-
-    std::vector<byte> data = cleanStatusPacket(statusPacket);
 
     if (data.size() == 2) {
         return Utils::convertFromHL(data[0], data[1]);
@@ -149,6 +133,9 @@ void Dynamixel::writeData(Address address, const std::vector<byte> &data) {
 }
 
 std::vector<Dynamixel::byte> Dynamixel::cleanStatusPacket(std::vector<byte> &statusPacket) {
+    // Remove the checksum.
+    statusPacket.pop_back();
+
     // Remove the first 5 elements, and shift everything else down by 5 indices.
     statusPacket.erase(statusPacket.begin(), statusPacket.begin() + 5);
 
@@ -156,8 +143,7 @@ std::vector<Dynamixel::byte> Dynamixel::cleanStatusPacket(std::vector<byte> &sta
 }
 
 bool Dynamixel::ping() {
-    send(Instruction::Ping, {});
-    std::vector<byte> statusPacket = read();
+    std::vector<byte> statusPacket = send(Instruction::Ping, {});
 
     return statusPacket[2] == id;
 }
@@ -280,17 +266,10 @@ int Dynamixel::getPresentSpeed() {
 
 int Dynamixel::getPresentLoad() {
     std::vector<byte> params = {static_cast<byte>(Address::PresentLoad), 2};
-    send(Instruction::Read, params);
-
-    std::vector<byte> statusPacket = read();
-
-    // Assert the packet is a sequence with at least 6 items.
-    if (statusPacket.size() < 6) {
-        return -1;
-    }
-
+    std::vector<byte> statusPacket = send(Instruction::Read, params);
     std::vector<byte> data = cleanStatusPacket(statusPacket);
 
+    // Assert that the packet is the correct size.
     if (data.size() == 2) {
         int loadDirection = (data[1] & (1u << 2u)) == 0u ? -1 : 1;
 
