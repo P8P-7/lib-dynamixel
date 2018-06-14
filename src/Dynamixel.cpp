@@ -315,6 +315,10 @@ int Dynamixel::getPunch() {
     return readData(Address::Punch, 2);
 }
 
+int Dynamixel::getId() const {
+    return id;
+}
+
 void Dynamixel::setId(byte newId) {
     writeData(Address::ID, {id});
     id = newId;

@@ -370,6 +370,12 @@ namespace goliath::dynamixel {
          */
         int getPunch();
 
+        /**
+         * Get the id of the Dynamixel unit represented by this instance.
+         * @return the id of the unit
+         */
+         int getId() const;
+
         /* High level mutators */
 
         /**
