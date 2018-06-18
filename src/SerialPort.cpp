@@ -33,7 +33,22 @@ void SerialPort::setTimeout(const TimerType::duration &t) {
 }
 
 size_t SerialPort::write(const std::vector<unsigned char> &data) {
+    boost::system::error_code errorCode;
+
+    // Flush input buffer, discarding all its contents.
+    if ((errorCode = flush(FlushType::Receive)) != boost::system::errc::success) {
+        throw boost::system::system_error(errorCode);
+    }
+
     return boost::asio::write(*port, boost::asio::buffer(data));
+}
+
+boost::system::error_code SerialPort::flush(FlushType what) {
+    int errorCode = boost::system::errc::success;
+    if (::tcflush(port->lowest_layer().native_handle(), static_cast<int>(what)) != 0) {
+        errorCode = errno;
+    }
+    return boost::system::error_code(errorCode, boost::asio::error::get_system_category());
 }
 
 std::vector<unsigned char> SerialPort::read(size_t size) {

@@ -9,6 +9,13 @@ namespace goliath::dynamixel {
     public:
         using TimerType = boost::asio::steady_timer;
 
+        enum class FlushType
+        {
+            Receive = TCIFLUSH,
+            Send = TCOFLUSH,
+            Both = TCIOFLUSH
+        };
+
         /**
          * Construct a serial port without opening it.
          */
@@ -59,6 +66,13 @@ namespace goliath::dynamixel {
         std::unique_ptr<boost::asio::serial_port> port;
 
         TimerType::duration timeout;
+
+        /**
+         * Flush a serial port's buffers.
+         * @param what determines the buffers to flush.
+         * @return indicates what error occurred, if any.
+         */
+        boost::system::error_code flush(FlushType what);
 
         /**
          * https://stackoverflow.com/a/25018876/1480019
