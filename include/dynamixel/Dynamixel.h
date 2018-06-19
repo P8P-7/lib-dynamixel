@@ -439,6 +439,11 @@ namespace goliath::dynamixel {
          */
         void setGoalPosition(short position);
 
+        /**
+         * Reset the control table to the factory default setting.
+         */
+        void factoryReset();
+
     private:
         byte id;
         std::shared_ptr<SerialPort> port;
