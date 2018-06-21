@@ -3,7 +3,7 @@
 using namespace goliath::dynamixel;
 
 SerialPort::SerialPort() : port(std::make_unique<boost::asio::serial_port>(io)),
-                           timeout(std::chrono::milliseconds(500)) {
+                           timeout(std::chrono::milliseconds(50)) {
 }
 
 bool SerialPort::connect(const std::string &device, unsigned int baud) {
@@ -35,31 +35,30 @@ void SerialPort::setTimeout(const TimerType::duration &t) {
 size_t SerialPort::write(const std::vector<unsigned char> &data) {
     boost::system::error_code errorCode;
 
-    // Flush input buffer, discarding all its contents.
-    if ((errorCode = flush(FlushType::Receive)) != boost::system::errc::success) {
-        throw boost::system::system_error(errorCode);
-    }
+    flush(FlushType::Receive);
 
-    return boost::asio::write(*port, boost::asio::buffer(data));
+    auto result =  boost::asio::write(*port, boost::asio::buffer(data));
+
+    return result;
 }
 
-boost::system::error_code SerialPort::flush(FlushType what) {
-    int errorCode = boost::system::errc::success;
-    if (::tcflush(port->lowest_layer().native_handle(), static_cast<int>(what)) != 0) {
-        errorCode = errno;
+void SerialPort::flush(FlushType what) {
+    if (::tcflush(port->native_handle(), static_cast<int>(what)) != 0) {
+        throw boost::system::system_error(errno, boost::asio::error::get_system_category());
     }
-    return boost::system::error_code(errorCode, boost::asio::error::get_system_category());
 }
 
 std::vector<unsigned char> SerialPort::read(size_t size) {
     // Allocate a vector with the desired size
     std::vector<unsigned char> result(size);
+
     readWithTimeout(boost::asio::buffer(result)); // Fill it with values
     return result;
 }
 
 template<typename MutableBufferSequence>
-void SerialPort::readWithTimeout(const MutableBufferSequence &buffers) {
+void SerialPort::readWithTimeout(const MutableBufferSequence &buffer) {
+    size_t bytesReceived = 0;
     boost::optional<boost::system::error_code> timer_result;
     TimerType timer(io);
     timer.expires_from_now(timeout);
@@ -68,8 +67,9 @@ void SerialPort::readWithTimeout(const MutableBufferSequence &buffers) {
     });
 
     boost::optional<boost::system::error_code> read_result;
-    boost::asio::async_read(*port, buffers, [&read_result](const boost::system::error_code &error, size_t) {
+    boost::asio::async_read(*port, buffer, [&read_result, &bytesReceived](const boost::system::error_code &error, size_t bytes) {
         read_result = error;
+        bytesReceived = bytes;
     });
 
     io.reset();
@@ -82,6 +82,15 @@ void SerialPort::readWithTimeout(const MutableBufferSequence &buffers) {
     }
 
     if (read_result && *read_result != boost::system::errc::success) {
+        auto first = boost::asio::buffer_cast<unsigned char*>(buffer);
+        auto last = first + bytesReceived;
+
+        std::string bufferStr;
+        for (auto it = first; it != last; ++it) {
+            bufferStr += (boost::format("0x%02X ") % static_cast<int>(*it)).str();
+        }
+        BOOST_LOG_TRIVIAL(debug) << "Buffer: " << bufferStr << " Bytes received: " << bytesReceived << ", expected: " << boost::asio::buffer_size(buffer);
+
         throw boost::system::system_error(*read_result);
     }
 }

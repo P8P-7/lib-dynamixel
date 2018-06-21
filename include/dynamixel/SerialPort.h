@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/log/trivial.hpp>
+#include <boost/format.hpp>
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
 
@@ -70,14 +71,14 @@ namespace goliath::dynamixel {
         /**
          * Flush a serial port's buffers.
          * @param what determines the buffers to flush.
-         * @return indicates what error occurred, if any.
+         * @throws boost::system::system_error if any error.
          */
-        boost::system::error_code flush(FlushType what);
+        void flush(FlushType what);
 
         /**
          * https://stackoverflow.com/a/25018876/1480019
          */
         template<typename MutableBufferSequence>
-        void readWithTimeout(const MutableBufferSequence &buffers);
+        void readWithTimeout(const MutableBufferSequence &buffer);
     };
 }

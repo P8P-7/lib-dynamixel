@@ -2,6 +2,7 @@
 
 #include "SerialPort.h"
 #include "Utils.h"
+#include <boost/format.hpp>
 
 namespace goliath::dynamixel {
     class Dynamixel {
@@ -108,7 +109,7 @@ namespace goliath::dynamixel {
          * instruction to perform or the status of the Dynamixel actuator.
          * @return a vector of bytes containing the status packet's data.
          */
-        std::vector<byte> send(Instruction instruction, const std::vector<byte> &data);
+        std::vector<byte> send(Instruction instruction, const std::vector<byte> &data, int tries = 5);
 
         /**
          * The "instruction packet" is the packet sent to the Dynamixel units.
@@ -440,6 +441,8 @@ namespace goliath::dynamixel {
         void setGoalPosition(short position);
 
     private:
+        const std::size_t readDelay = 100;
+
         byte id;
         std::shared_ptr<SerialPort> port;
 
