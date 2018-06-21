@@ -440,6 +440,11 @@ namespace goliath::dynamixel {
          */
         void setGoalPosition(short position);
 
+        /**
+         * Reset the control table to the factory default setting.
+         */
+        void factoryReset();
+
     private:
         const std::size_t readDelay = 100;
 

@@ -384,3 +384,7 @@ void Dynamixel::setGoalPosition(short position) {
     std::vector<byte> data = Utils::convertToHL(position);
     writeData(Address::GoalPosition, data);
 }
+
+void Dynamixel::factoryReset() {
+    send(Instruction::Reset, {});
+}
