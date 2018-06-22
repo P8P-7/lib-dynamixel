@@ -46,21 +46,34 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
 
     // Assert the packet is a sequence with 5 items.
     if (statusPacket.size() < 5) {
-        throw std::runtime_error(
-                "Incomplete packet. Received " + std::to_string(statusPacket.size()) + " instead of expected 5 bytes.");
+        std::string error =
+                "Incomplete packet. Received " + std::to_string(statusPacket.size()) + " instead of expected 5 bytes.";
+        if (tries > 0) {
+            BOOST_LOG_TRIVIAL(trace) << "Retrying " << tries << " " << error;
+            return send(instruction, data, tries - 1);
+        }
+        throw std::runtime_error(error);
     }
 
     // Check the header bytes.
     if (statusPacket[0] != '\xFF' || statusPacket[1] != '\xFF') {
-        throw std::runtime_error(
-                (boost::format("Wrong header; should be equal to [0xFF, 0xFF] received [0x%02X, 0x%02X] ")
-                    % static_cast<int>(statusPacket[0])
-                    % static_cast<int>(statusPacket[1])
-            ).str());
+        std::string error = (boost::format("Wrong header; should be equal to [0xFF, 0xFF] received [0x%02X, 0x%02X]")
+                             % static_cast<int>(statusPacket[0])
+                             % static_cast<int>(statusPacket[1])).str();
+        if (tries > 0) {
+            BOOST_LOG_TRIVIAL(trace) << "Retrying " << tries << " " << error;
+            return send(instruction, data, tries - 1);
+        }
+        throw std::runtime_error(error);
     }
 
     if (statusPacket[2] != id) {
-        BOOST_LOG_TRIVIAL(trace) << "Received wrong id " << statusPacket[2] << " expected " << id;
+        std::string error = "Received wrong id " + std::to_string(statusPacket[2]) + " expected " + std::to_string(id);
+        if (tries > 0) {
+            BOOST_LOG_TRIVIAL(trace) << "Retrying " << tries << " " << error;
+            return send(instruction, data, tries - 1);
+        }
+        throw std::runtime_error(error);
     }
 
     byte length = static_cast<byte>(statusPacket[3] - 1);
@@ -79,14 +92,24 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
     statusPacketEnd.pop_back();
 
     if (statusPacketEnd.size() != length - 1u) {
-        BOOST_LOG_TRIVIAL(trace)
-            << "Incomplete second packet. Received " + std::to_string(statusPacket.size()) + " instead of expected " +
-               std::to_string(length) + " bytes";
+        std::string error =
+                "Incomplete second packet. Received " + std::to_string(statusPacket.size()) + " instead of expected " +
+                std::to_string(length) + " bytes";
+        if (tries > 0) {
+            BOOST_LOG_TRIVIAL(trace) << "Retrying " << tries << " " << error;
+            return send(instruction, data, tries - 1);
+        }
+        throw std::runtime_error(error);
     }
     statusPacket.insert(statusPacket.end(), statusPacketEnd.begin(), statusPacketEnd.end());
 
     if (Utils::checkSum(statusPacket) != checkSum) {
-        BOOST_LOG_TRIVIAL(trace) << "Invalid checksum";
+        std::string error = "Invalid checksum";
+        if (tries > 0) {
+            BOOST_LOG_TRIVIAL(trace) << "Retrying " << tries << " " << error;
+            return send(instruction, data, tries - 1);
+        }
+        throw std::runtime_error(error);
     }
 
     return statusPacket;
@@ -383,6 +406,14 @@ void Dynamixel::setMovingSpeed(short speed) {
 void Dynamixel::setGoalPosition(short position) {
     std::vector<byte> data = Utils::convertToHL(position);
     writeData(Address::GoalPosition, data);
+}
+
+void Dynamixel::moveTo(short position, short speed) {
+    std::vector<byte> posData = Utils::convertToHL(position);
+    std::vector<byte> speedData = Utils::convertToHL(speed);
+    posData.insert(posData.end(), speedData.begin(), speedData.end());
+
+    writeData(Address::GoalPosition, posData);
 }
 
 void Dynamixel::factoryReset() {

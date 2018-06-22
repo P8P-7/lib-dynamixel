@@ -441,6 +441,14 @@ namespace goliath::dynamixel {
         void setGoalPosition(short position);
 
         /**
+         * Set the *goal position* and *moving speed* for the specified
+         * Dynamixel unit.
+         * @param position the new goal position. It must be in range (0, 1023).
+         * @param speed the new moving speed. It must be in range (0, 1023).
+         */
+        void moveTo(short position, short speed);
+
+        /**
          * Reset the control table to the factory default setting.
          */
         void factoryReset();

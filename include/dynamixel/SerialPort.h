@@ -28,7 +28,7 @@ namespace goliath::dynamixel {
         ~SerialPort();
 
         /**
-         * Create a serial connection with dynamixel actuators.
+         * Create a serial connection with Dynamixel actuators.
          * @param device the serial device to connect with.
          * @param baud the baud rate speed.
          * @return true if connected successfully; otherwise, false.

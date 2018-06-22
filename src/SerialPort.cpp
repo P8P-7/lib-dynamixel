@@ -33,13 +33,9 @@ void SerialPort::setTimeout(const TimerType::duration &t) {
 }
 
 size_t SerialPort::write(const std::vector<unsigned char> &data) {
-    boost::system::error_code errorCode;
-
     flush(FlushType::Receive);
 
-    auto result =  boost::asio::write(*port, boost::asio::buffer(data));
-
-    return result;
+    return boost::asio::write(*port, boost::asio::buffer(data));
 }
 
 void SerialPort::flush(FlushType what) {
@@ -59,38 +55,39 @@ std::vector<unsigned char> SerialPort::read(size_t size) {
 template<typename MutableBufferSequence>
 void SerialPort::readWithTimeout(const MutableBufferSequence &buffer) {
     size_t bytesReceived = 0;
-    boost::optional<boost::system::error_code> timer_result;
+    boost::optional<boost::system::error_code> timerResult;
     TimerType timer(io);
     timer.expires_from_now(timeout);
-    timer.async_wait([&timer_result](const boost::system::error_code &error) {
-        timer_result = error;
+    timer.async_wait([&timerResult](const boost::system::error_code &error) {
+        timerResult = error;
     });
 
-    boost::optional<boost::system::error_code> read_result;
-    boost::asio::async_read(*port, buffer, [&read_result, &bytesReceived](const boost::system::error_code &error, size_t bytes) {
-        read_result = error;
+    boost::optional<boost::system::error_code> readResult;
+    boost::asio::async_read(*port, buffer, [&readResult, &bytesReceived](const boost::system::error_code &error, size_t bytes) {
+        readResult = error;
         bytesReceived = bytes;
     });
 
     io.reset();
     while (io.run_one()) {
-        if (read_result) {
+        if (readResult) {
             timer.cancel();
-        } else if (timer_result) {
+        } else if (timerResult) {
             port->cancel();
         }
     }
 
-    if (read_result && *read_result != boost::system::errc::success) {
-        auto first = boost::asio::buffer_cast<unsigned char*>(buffer);
+    if (readResult && *readResult != boost::system::errc::success) {
+        auto first = boost::asio::buffer_cast<unsigned char *>(buffer);
         auto last = first + bytesReceived;
 
         std::string bufferStr;
         for (auto it = first; it != last; ++it) {
             bufferStr += (boost::format("0x%02X ") % static_cast<int>(*it)).str();
         }
-        BOOST_LOG_TRIVIAL(debug) << "Buffer: " << bufferStr << " Bytes received: " << bytesReceived << ", expected: " << boost::asio::buffer_size(buffer);
+        BOOST_LOG_TRIVIAL(debug) << "Buffer: " << bufferStr << " Bytes received: " << bytesReceived << ", expected: "
+                                 << boost::asio::buffer_size(buffer);
 
-        throw boost::system::system_error(*read_result);
+        throw boost::system::system_error(*readResult);
     }
 }
