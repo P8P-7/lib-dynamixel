@@ -241,23 +241,11 @@ int Dynamixel::getMaxTemperature() {
 }
 
 int Dynamixel::getMinVoltage() {
-    int value = readData(Address::LowestLimitVoltage, 1);
-
-    if (value == -1) {
-        return value;
-    }
-
-    return value / 10;
+    return readData(Address::LowestLimitVoltage, 1);
 }
 
 int Dynamixel::getMaxVoltage() {
-    int value = readData(Address::HighestLimitVoltage, 1);
-
-    if (value == -1) {
-        return value;
-    }
-
-    return value / 10;
+    return readData(Address::HighestLimitVoltage, 1);
 }
 
 int Dynamixel::getMaxTorque() {
@@ -340,23 +328,11 @@ int Dynamixel::getPresentLoad() {
 }
 
 int Dynamixel::getPresentVoltage() {
-    int value = readData(Address::PresentVoltage, 1);
-
-    if (value == -1) {
-        return value;
-    }
-
-    return value / 10;
+    return readData(Address::PresentVoltage, 1);
 }
 
 int Dynamixel::getPresentTemperature() {
-    int value = readData(Address::PresentTemperature, 1);
-
-    if (value == -1) {
-        return value;
-    }
-
-    return value / 10;
+    return readData(Address::PresentTemperature, 1);
 }
 
 bool Dynamixel::isMoving() {
