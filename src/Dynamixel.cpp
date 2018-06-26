@@ -87,7 +87,17 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
         return statusPacket;
     }
 
-    std::vector<byte> statusPacketEnd = port->read(length);  // [parameter1, ..., checksum]
+    std::vector<byte> statusPacketEnd;
+    try {
+        statusPacketEnd = port->read(length);  // [parameter1, ..., checksum]
+    } catch (std::exception &ex) {
+        if (tries > 0) {
+            BOOST_LOG_TRIVIAL(trace) << "Retrying " << tries << " " << ex.what();
+            return send(instruction, data, tries - 1);
+        }
+        throw ex;
+    }
+
     byte checkSum = statusPacketEnd[statusPacketEnd.size() - 1];
     statusPacketEnd.pop_back();
 
