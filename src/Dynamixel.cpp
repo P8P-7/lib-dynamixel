@@ -76,7 +76,7 @@ std::vector<Dynamixel::byte> Dynamixel::send(Instruction instruction, const std:
         throw std::runtime_error(error);
     }
 
-    byte length = std::min(static_cast<byte>(statusPacket[3] - 1), 3);
+    byte length = static_cast<byte>(std::min(statusPacket[3] - 1, 3));
     byte errorCode = statusPacket[4];
 
     if (errorCode != 0) {
